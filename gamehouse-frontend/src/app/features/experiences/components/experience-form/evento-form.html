@@ -1,0 +1,45 @@
+<form class="formulario" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+  @if (errorServidor(); as mensaje) { <div class="alerta" role="alert">{{ mensaje }}</div> }
+
+  <div class="mb-1"><h2 class="text-lg font-bold text-slate-900">Datos de la experiencia</h2><p class="mt-1 text-sm text-slate-500">Los campos se validan antes de enviar los cambios a la API.</p></div>
+
+  <label class="campo">Nombre de la experiencia
+    <input formControlName="name" type="text" maxlength="120" autocomplete="off" />
+    @if (error('name'); as message) { <small class="field-error">{{ message }}</small> }
+  </label>
+  <label class="campo">Descripción
+    <textarea formControlName="description" rows="5" placeholder="¿Qué podrán hacer los participantes?"></textarea>
+    @if (error('description'); as message) { <small class="field-error">{{ message }}</small> }
+  </label>
+
+  <div class="fila">
+    <label class="campo">Lugar <input formControlName="location" type="text" /> @if (error('location'); as message) { <small class="field-error">{{ message }}</small> }</label>
+    <label class="campo">Ciudad <input formControlName="city" type="text" /> @if (error('city'); as message) { <small class="field-error">{{ message }}</small> }</label>
+    <label class="campo">País <input formControlName="country" type="text" /> @if (error('country'); as message) { <small class="field-error">{{ message }}</small> }</label>
+  </div>
+
+  <div class="fila fila-cuatro">
+    <label class="campo">Precio <input formControlName="price" type="number" min="0" step="0.01" /> @if (error('price'); as message) { <small class="field-error">{{ message }}</small> }</label>
+    <label class="campo">Moneda <input formControlName="currency" type="text" maxlength="3" /> @if (error('currency'); as message) { <small class="field-error">{{ message }}</small> }</label>
+    <label class="campo">Duración (min) <input formControlName="duration" type="number" min="1" step="1" /> @if (error('duration'); as message) { <small class="field-error">{{ message }}</small> }</label>
+    <label class="campo">Capacidad <input formControlName="capacity" type="number" min="1" step="1" /> @if (error('capacity'); as message) { <small class="field-error">{{ message }}</small> }</label>
+  </div>
+
+  <label class="campo">URL de portada <input formControlName="coverImage" type="url" placeholder="https://..." /> @if (error('coverImage'); as message) { <small class="field-error">{{ message }}</small> }</label>
+  <label class="campo">URLs de galería <textarea formControlName="gallery" rows="3" placeholder="Una URL por línea"></textarea> @if (error('gallery'); as message) { <small class="field-error">{{ message }}</small> }</label>
+
+  <div class="fila">
+    <label class="campo">Organizador <input formControlName="hostName" type="text" /> @if (error('hostName'); as message) { <small class="field-error">{{ message }}</small> }</label>
+    <label class="campo">Estado
+      <select formControlName="status">
+        <option value="draft">Borrador</option><option value="published">Publicado</option><option value="archived">Archivado</option><option value="suspended">Suspendido</option>
+      </select>
+    </label>
+    <label class="campo campo-check"><input formControlName="isActive" type="checkbox" /> Experiencia activa</label>
+  </div>
+
+  <div class="acciones">
+    <button type="submit" class="boton boton-primario" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : evento() ? 'Guardar cambios' : 'Crear experiencia' }}</button>
+    <button type="button" class="boton boton-secundario" (click)="cancelar.emit()">Cancelar</button>
+  </div>
+</form>

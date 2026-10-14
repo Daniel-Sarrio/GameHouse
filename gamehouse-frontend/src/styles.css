@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+:root {
+  --fondo: #f4f5f2;
+  --tinta: #17213c;
+  --suave: #626d81;
+  --azul: #3448dc;
+  --azul-oscuro: #2435ae;
+  --borde: #dce1e6;
+  font-family: Inter, 'Segoe UI', system-ui, sans-serif;
+  color: var(--tinta);
+  background: var(--fondo);
+  font-synthesis: none;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { min-width: 320px; scroll-behavior: smooth; }
+body { margin: 0; min-height: 100vh; background: var(--fondo); }
+app-root { min-height: 100vh; display: flex; flex-direction: column; }
+main { flex: 1; }
+button, input, textarea { font: inherit; }
+button { cursor: pointer; }
+.contenedor { width: min(1180px, calc(100% - 2.5rem)); margin-inline: auto; }
+
+.boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  padding: .78rem 1.15rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  text-decoration: none;
+  font-weight: 750;
+  line-height: 1.1;
+  transition: transform .16s, background .16s;
+}
+.boton:hover { transform: translateY(-2px); }
+.boton:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+.boton-primario { background: var(--azul); color: #fff; }
+.boton-primario:hover { background: var(--azul-oscuro); }
+.boton-secundario { background: #fff; color: var(--tinta); border-color: var(--borde); }
+.boton-secundario:hover { background: #eff1f6; }
+.boton-peligro { background: #ad3234; color: #fff; }
+.boton-peligro:hover { background: #8e2428; }
+.pie { border-top: 1px solid var(--borde); padding: 1.6rem 0; color: var(--suave); font-size: .85rem; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+:focus-visible { outline: 3px solid #8d9aff; outline-offset: 3px; }
+
+@media (max-width: 520px) { .contenedor { width: min(100% - 1.4rem, 1180px); } }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { transition-duration: .01ms !important; } }

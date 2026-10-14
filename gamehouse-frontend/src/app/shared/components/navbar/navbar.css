@@ -1,0 +1,12 @@
+:host { display: block; }
+.brand { text-decoration: none; }
+.brand-mark { background: linear-gradient(135deg, #4f46e5, #2563eb); box-shadow: 0 8px 18px rgba(79, 70, 229, .22); }
+.nav-link { text-decoration: none; transition: background .15s, color .15s; }
+.nav-link:hover, .nav-link.active { background: #eef2ff; color: #3730a3; }
+@media (max-width: 1023px) {
+  .admin-nav { border-right: 0; border-bottom: 1px solid #e2e8f0; }
+  nav { flex-direction: row !important; overflow-x: auto; padding-top: .5rem !important; padding-bottom: .75rem !important; }
+  nav > p { display: none; }
+  .nav-link { white-space: nowrap; }
+  .brand { padding-top: 1rem; padding-bottom: 1rem; }
+}

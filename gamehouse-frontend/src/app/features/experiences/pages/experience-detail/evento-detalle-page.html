@@ -1,0 +1,47 @@
+<div class="contenedor detalle">
+  <a routerLink="/" class="volver">← Volver a todas las experiencias</a>
+  @if (store.cargandoDetalle()) {
+    <app-estado-carga texto="Cargando experiencia…" />
+  } @else if (store.errorDetalle(); as mensaje) {
+    <app-mensaje-error [mensaje]="mensaje" (reintentar)="reintentar()" />
+  } @else if (vista(); as v) {
+    @if (!v.evento.isActive) {
+      <div class="inactive-banner" role="status"><strong>EXPERIENCIA INACTIVA</strong><span>No está disponible en la plataforma. Puedes activarla desde las acciones de esta página.</span></div>
+    }
+    <article class="ficha" [class.ficha-inactiva]="!v.evento.isActive">
+      <div class="cabecera" [style.background-image]="'linear-gradient(90deg, rgba(16,32,101,.92), rgba(48,72,198,.55)), url(' + v.evento.coverImage + ')'">
+        <p>GAMEHOUSE / {{ v.evento.slug }}</p><h1>{{ v.evento.name }}</h1>
+      </div>
+      <div class="contenido">
+        <p class="ubicacion">{{ v.evento.location }} · {{ v.evento.city }}, {{ v.evento.country }}</p>
+        <p class="descripcion">{{ v.evento.description || 'Esta experiencia todavía no tiene descripción.' }}</p>
+        <dl class="datos">
+          <div><dt>Precio</dt><dd>{{ v.precio }}</dd></div>
+          <div><dt>Duración</dt><dd>{{ v.evento.duration }} minutos</dd></div>
+          <div><dt>Capacidad</dt><dd>{{ v.evento.capacity }} personas</dd></div>
+          <div><dt>Organiza</dt><dd>{{ v.evento.hostName }}</dd></div>
+          <div><dt>Estado</dt><dd>{{ v.estado }}</dd></div>
+          <div><dt>Visibilidad</dt><dd><span class="status-pill" [class.status-off]="!v.evento.isActive">{{ v.evento.isActive ? 'Activa' : 'Inactiva' }}</span></dd></div>
+        </dl>
+        @if (v.evento.gallery.length) {
+          <div class="galeria">@for (imagen of v.evento.gallery; track imagen) { <img [src]="imagen" [alt]="v.evento.name" /> }</div>
+        }
+      </div>
+    </article>
+
+    @if (store.errorAccion(); as mensaje) { <div class="alerta" role="alert">{{ mensaje }}</div> }
+
+    <div class="acciones">
+      <a class="boton boton-primario" [routerLink]="['/eventos', v.evento.slug, 'editar']">Editar evento</a>
+      <button type="button" class="boton boton-secundario" [disabled]="store.guardando()" (click)="cambiarEstado()">{{ v.evento.isActive ? 'Desactivar' : 'Activar' }}</button>
+      @if (!confirmandoBorrado()) {
+        <button type="button" class="boton boton-peligro" (click)="confirmandoBorrado.set(true)">Eliminar</button>
+      } @else {
+        <span class="confirmar">¿Enviar este evento a eliminados?
+          <button type="button" class="boton boton-peligro" [disabled]="store.guardando()" (click)="eliminar()">Sí, eliminar</button>
+          <button type="button" class="boton boton-secundario" (click)="confirmandoBorrado.set(false)">Cancelar</button>
+        </span>
+      }
+    </div>
+  }
+</div>

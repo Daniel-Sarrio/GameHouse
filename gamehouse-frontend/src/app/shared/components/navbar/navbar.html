@@ -1,0 +1,25 @@
+<aside class="admin-nav flex h-full flex-col border-r border-slate-200 bg-white">
+  <a routerLink="/" class="brand flex items-center gap-3 border-b border-slate-100 px-6 py-6" aria-label="GameHouse, ir al panel">
+    <span class="brand-mark grid h-10 w-10 place-items-center rounded-xl text-lg font-black text-white">G</span>
+    <span><strong class="block text-base tracking-tight text-slate-900">GameHouse</strong><small class="block text-[11px] font-semibold tracking-[.18em] text-slate-400 uppercase">Administración</small></span>
+  </a>
+
+  <nav class="flex flex-1 flex-col gap-1 px-3 py-5" aria-label="Navegación de administración">
+    <p class="px-3 pb-2 text-[11px] font-bold tracking-[.16em] text-slate-400 uppercase">Plataforma</p>
+    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-600">
+      <svg lucideLayoutDashboard [size]="19" aria-hidden="true"></svg> Resumen
+    </a>
+    <a routerLink="/eventos/nuevo" routerLinkActive="active" class="nav-link flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-600">
+      <svg lucidePlus [size]="19" aria-hidden="true"></svg> Nueva experiencia
+    </a>
+    <p class="px-3 pt-7 pb-2 text-[11px] font-bold tracking-[.16em] text-slate-400 uppercase">Gestión</p>
+    <a routerLink="/eventos" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-600">
+      <svg lucideLayers [size]="19" aria-hidden="true"></svg> Experiencias
+    </a>
+  </nav>
+
+  <div class="mx-4 mb-6 hidden rounded-2xl border border-indigo-100 bg-indigo-50 p-4 lg:block">
+    <p class="text-sm font-bold text-indigo-950">Panel de experiencias</p>
+    <p class="mt-1 text-xs leading-5 text-indigo-700">Gestiona el catálogo, los estados y la disponibilidad desde un solo lugar.</p>
+  </div>
+</aside>
