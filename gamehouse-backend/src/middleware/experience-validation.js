@@ -19,6 +19,9 @@ const experienceFields = {
   coverImage: z.string().url('coverImage debe ser una URL válida.'),
   gallery: z.array(z.string().url('Cada imagen de gallery debe ser una URL válida.')).default([]),
   hostName: text('hostName', 2, 100),
+  hostId: z.number().int().positive(),
+  locationId: z.number().int().positive(),
+  categoryIds: z.array(z.number().int().positive()).min(1, 'Selecciona al menos una categoría.'),
   status: status.default('published'),
   isActive: z.boolean().default(true),
 };

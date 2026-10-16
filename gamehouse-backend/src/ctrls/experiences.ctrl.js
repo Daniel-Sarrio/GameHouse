@@ -1,4 +1,8 @@
 const experiencesService = require('../services/experiences.service');
+const getFormOptions = async (req, res, next) => {
+  try { res.json({ success: true, data: await experiencesService.getFormOptions() }); }
+  catch (error) { next(error); }
+};
 
 const getAllExperiences = async (req, res, next) => {
   try {
@@ -77,6 +81,7 @@ const deactivateExperience = async (req, res, next) => {
 };
 
 module.exports = {
+  getFormOptions,
   getAllExperiences,
   getExperienceById,
   getExperienceBySlug,

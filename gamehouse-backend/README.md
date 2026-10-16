@@ -29,7 +29,12 @@ npm run seed
 npm run dev
 ```
 
-`npm run migrate` amplía la tabla existente sin borrar sus registros y genera un slug para cada experiencia anterior. `npm run seed` añade tres experiencias de ejemplo con slugs definidos en `seed.js`; si alguno ya existe, el servicio añade un sufijo para mantenerlo único.
+También puedes ejecutar `npm run seed` desde la raíz del proyecto. El comando aplica la migración y carga cuatro organizadores, cinco lugares, cinco categorías y ocho experiencias de prueba. Se puede repetir: los eventos que ya tengan el mismo slug se conservan sin duplicarse.
+
+La tabla `images` permite asociar imágenes a cualquier registro mediante `entity_type` (nombre de la tabla, por ejemplo `experiences`, `hosts`, `locations` o `categories`) y `entity_id`. Tiene una imagen principal como máximo por registro. La migración copia las portadas y galerías existentes y mantiene sincronizadas las imágenes de las experiencias al crearlas o editarlas.
+`locations.image_url` guarda además la imagen principal del lugar; la migración la rellena con las imágenes existentes y la mantiene sincronizada con `images`.
+
+`npm run migrate` amplía la tabla existente sin borrar sus registros, genera slugs y crea los catálogos de organizadores, lugares y categorías. Conserva las experiencias existentes y les asigna sus relaciones. `npm run seed` añade tres experiencias de ejemplo con slugs definidos en `seed.js`; si alguno ya existe, el servicio añade un sufijo para mantenerlo único.
 
 Configura `.env` a partir de `.env.example`:
 
@@ -44,7 +49,7 @@ DB_PASSWORD=tu_contrasena
 
 ## Campos de una experiencia
 
-Además de `id`, cada experiencia contiene `name`, `slug`, `description`, `location`, `country`, `city`, `price`, `currency`, `duration`, `capacity`, `coverImage`, `gallery`, `hostName`, `status`, `isActive`, `createdAt`, `updatedAt` y `deletedAt`.
+Además de `id`, cada experiencia contiene `name`, `slug`, `description`, `location`, `country`, `city`, `price`, `currency`, `duration`, `capacity`, `coverImage`, `gallery`, `hostName`, `hostId`, `locationId`, `categoryIds`, `status`, `isActive`, `createdAt`, `updatedAt` y `deletedAt`.
 
 El slug se genera automáticamente desde `name` y se hace único. El cliente no debe enviarlo. DELETE es un borrado lógico: rellena `deletedAt`, desactiva el evento y deja de mostrarlo en las consultas normales.
 
@@ -53,6 +58,7 @@ El slug se genera automáticamente desde `name` y se hace único. El cliente no 
 | Método | Ruta | Función |
 | --- | --- | --- |
 | GET | `/api/experiences` | Listar las no eliminadas |
+| GET | `/api/experiences/form-options` | Listar organizadores, lugares y categorías |
 | GET | `/api/experiences/:id` | Consultar por ID |
 | GET | `/api/experiences/slug/:slug` | Consultar por slug |
 | POST | `/api/experiences` | Crear |

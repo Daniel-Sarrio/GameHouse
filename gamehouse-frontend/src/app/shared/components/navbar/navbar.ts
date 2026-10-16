@@ -1,10 +1,10 @@
 import { Component } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { LucideLayoutDashboard, LucideLayers, LucidePlus } from '@lucide/angular';
+import { LucideLayers } from '@lucide/angular';
 
 @Component({
   selector: 'app-navbar',
-  imports: [RouterLink, RouterLinkActive, LucideLayoutDashboard, LucideLayers, LucidePlus],
+  imports: [RouterLink, RouterLinkActive, LucideLayers],
   templateUrl: './navbar.html',
   styleUrl: './navbar.css',
 })

@@ -4,11 +4,6 @@ h1 { margin: 0; color: #0f172a; font-size: clamp(1.8rem, 4vw, 2.4rem); font-weig
 .page-description { margin: .35rem 0 0; color: #64748b; font-size: .9rem; }
 .page-header .boton { flex: none; }
 .list-panel { overflow: hidden; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; box-shadow: 0 3px 16px rgba(15, 23, 42, .035); }
-.list-toolbar { padding: 1rem 1.2rem; border-bottom: 1px solid #e2e8f0; }
-.search-field { display: flex; align-items: center; gap: .65rem; width: min(100%, 340px); padding: .55rem .8rem; border: 1px solid #d8dee8; border-radius: 8px; color: #94a3b8; }
-.search-field:focus-within { border-color: #4f46e5; outline: 2px solid #e0e7ff; }
-.search-field input { min-width: 0; width: 100%; border: 0; outline: 0; background: transparent; color: #0f172a; font-size: .86rem; }
-.search-field input::placeholder { color: #94a3b8; }
 .table-scroll { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; text-align: left; white-space: nowrap; }
 th { padding: .85rem 1rem; background: #f8fafc; color: #64748b; font-size: .73rem; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
@@ -19,6 +14,12 @@ tbody tr:hover { background: #fafbff; }
 .name-cell a { color: inherit; text-decoration: none; }
 .name-cell a:hover { color: #3448dc; text-decoration: underline; }
 .price-cell { color: #0f172a; font-weight: 600; }
+.text-cell { min-width: 180px; max-width: 260px; white-space: normal; overflow-wrap: anywhere; }
+.description-cell { min-width: 260px; max-width: 360px; white-space: normal; line-height: 1.4; }
+.url-cell, .gallery-cell { min-width: 200px; max-width: 260px; white-space: normal; overflow-wrap: anywhere; }
+.gallery-cell a { display: block; margin: .2rem 0; }
+.media-link { color: #3159b7; text-decoration: underline; }
+.media-link:hover { color: #1e3a8a; }
 .status-pill { display: inline-block; padding: .3rem .65rem; border-radius: 999px; background: #ecfdf5; color: #047857; font-size: .72rem; font-weight: 700; }
 .status-pill.inactive { background: #f1f5f9; color: #64748b; }
 .actions-heading { text-align: right; }

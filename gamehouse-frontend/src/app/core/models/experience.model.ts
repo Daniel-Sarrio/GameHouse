@@ -14,6 +14,10 @@ export interface Evento {
   coverImage: string;
   gallery: string[];
   hostName: string;
+  hostId: number;
+  locationId: number;
+  categoryIds: number[];
+  categoryNames?: string[];
   status: 'draft' | 'published' | 'archived' | 'suspended';
   isActive: boolean;
   createdAt: string;
@@ -21,5 +25,5 @@ export interface Evento {
   deletedAt: string | null;
 }
 
-export type DatosEvento = Omit<Evento, 'id' | 'slug' | 'createdAt' | 'updatedAt' | 'deletedAt'>;
+export type DatosEvento = Omit<Evento, 'id' | 'slug' | 'categoryNames' | 'createdAt' | 'updatedAt' | 'deletedAt'>;
 export type CambiosEvento = Partial<DatosEvento>;

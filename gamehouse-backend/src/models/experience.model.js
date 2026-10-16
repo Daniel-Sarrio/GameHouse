@@ -2,7 +2,7 @@ class Experience {
   constructor({
     id, name, slug, description, location, country, city, price, currency,
     duration, capacity, cover_image, gallery, host_name, status, is_active,
-    created_at, updated_at, deleted_at,
+    host_id, location_id, category_ids, category_names, created_at, updated_at, deleted_at,
   }) {
     this.id = id;
     this.name = name;
@@ -18,6 +18,10 @@ class Experience {
     this.coverImage = cover_image;
     this.gallery = gallery || [];
     this.hostName = host_name;
+    this.hostId = host_id;
+    this.locationId = location_id;
+    this.categoryIds = category_ids || [];
+    this.categoryNames = category_names || [];
     this.status = status;
     this.isActive = is_active;
     this.createdAt = created_at;

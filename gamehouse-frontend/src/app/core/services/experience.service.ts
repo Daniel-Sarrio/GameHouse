@@ -3,10 +3,20 @@ import { RespuestaApi } from '../models/api.model';
 import { CambiosEvento, DatosEvento, Evento } from '../models/experience.model';
 import { ApiService } from './api.service';
 
+export interface OpcionesEvento {
+  hosts: { id: number; name: string }[];
+  locations: { id: number; name: string; city: string; country: string; imageUrl: string | null }[];
+  categories: { id: number; name: string }[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class EventosService {
   private readonly api = inject(ApiService);
   private readonly path = 'experiences';
+
+  async obtenerOpcionesFormulario(): Promise<OpcionesEvento> {
+    return (await this.api.get<RespuestaApi<OpcionesEvento>>(`${this.path}/form-options`)).data;
+  }
 
   async obtenerEventos(): Promise<Evento[]> {
     return (await this.api.get<RespuestaApi<Evento[]>>(this.path)).data;

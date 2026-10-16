@@ -9,14 +9,6 @@
   </header>
 
   <section class="list-panel" aria-label="Listado de experiencias">
-    <div class="list-toolbar">
-      <label class="search-field">
-        <svg lucideSearch [size]="18" aria-hidden="true"></svg>
-        <span class="sr-only">Buscar experiencias</span>
-        <input type="search" placeholder="Buscar experiencias" [value]="busqueda()" (input)="buscar($any($event.target).value)" />
-      </label>
-    </div>
-
     @if (store.cargando() && store.eventos().length === 0) {
       <div class="list-feedback"><app-skeleton-loader /></div>
     } @else if (store.error(); as mensaje) {
@@ -27,16 +19,42 @@
       <div class="table-scroll">
         <table>
           <thead>
-            <tr><th scope="col">ID</th><th scope="col">Experiencia</th><th scope="col">Ubicación</th><th scope="col">Precio</th><th scope="col">Estado</th><th scope="col" class="actions-heading">Acciones</th></tr>
+            <tr>
+              <th scope="col">ID</th><th scope="col">Nombre</th><th scope="col">Slug</th>
+              <th scope="col">Descripción</th><th scope="col">Lugar</th><th scope="col">Ciudad</th><th scope="col">País</th>
+              <th scope="col">Precio</th><th scope="col">Moneda</th><th scope="col">Duración</th><th scope="col">Capacidad</th>
+              <th scope="col">Portada</th><th scope="col">Galería</th><th scope="col">Organizador</th><th scope="col">ID organizador</th>
+              <th scope="col">ID lugar</th><th scope="col">Categorías</th><th scope="col">IDs categorías</th>
+              <th scope="col">Estado</th><th scope="col">Activa</th><th scope="col">Creado</th><th scope="col">Actualizado</th><th scope="col">Eliminado</th>
+              <th scope="col" class="actions-heading">Acciones</th>
+            </tr>
           </thead>
           <tbody>
             @for (evento of visibles(); track evento.id) {
               <tr>
                 <td class="id-cell">{{ evento.id }}</td>
                 <td class="name-cell"><a [routerLink]="['/eventos', evento.slug]">{{ evento.name }}</a></td>
-                <td>{{ evento.city }}, {{ evento.country }}</td>
-                <td class="price-cell">{{ precio(evento) }}</td>
-                <td><span class="status-pill" [class.inactive]="!evento.isActive">{{ evento.isActive ? 'Activa' : 'Inactiva' }}</span></td>
+                <td class="text-cell">{{ evento.slug }}</td>
+                <td class="description-cell">{{ evento.description || '—' }}</td>
+                <td>{{ evento.location }}</td>
+                <td>{{ evento.city }}</td>
+                <td>{{ evento.country }}</td>
+                <td class="price-cell">{{ evento.price }}</td>
+                <td>{{ evento.currency }}</td>
+                <td>{{ evento.duration }} min</td>
+                <td>{{ evento.capacity }}</td>
+                <td class="url-cell"><a class="media-link" [href]="evento.coverImage" target="_blank" rel="noopener noreferrer">{{ evento.coverImage }}</a></td>
+                <td class="gallery-cell">@for (imagen of evento.gallery; track $index) { <a class="media-link" [href]="imagen" target="_blank" rel="noopener noreferrer">{{ imagen }}</a> } @empty { — }</td>
+                <td>{{ evento.hostName }}</td>
+                <td>{{ evento.hostId }}</td>
+                <td>{{ evento.locationId }}</td>
+                <td class="text-cell">{{ categorias(evento) }}</td>
+                <td>{{ evento.categoryIds.join(', ') || '—' }}</td>
+                <td>{{ evento.status }}</td>
+                <td><span class="status-pill" [class.inactive]="!evento.isActive">{{ evento.isActive ? 'Sí' : 'No' }}</span></td>
+                <td>{{ evento.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+                <td>{{ evento.updatedAt | date:'dd/MM/yyyy HH:mm' }}</td>
+                <td>{{ evento.deletedAt ? (evento.deletedAt | date:'dd/MM/yyyy HH:mm') : '—' }}</td>
                 <td>
                   <div class="row-actions">
                     <a [routerLink]="['/eventos', evento.slug]" [attr.aria-label]="'Ver ' + evento.name" title="Ver"><svg lucideEye [size]="17" aria-hidden="true"></svg><span>Ver</span></a>
@@ -46,7 +64,7 @@
                 </td>
               </tr>
             } @empty {
-              <tr><td colspan="6" class="no-results">No hay experiencias que coincidan con la búsqueda.</td></tr>
+              <tr><td colspan="24" class="no-results">No hay experiencias.</td></tr>
             }
           </tbody>
         </table>
@@ -54,10 +72,10 @@
       <footer class="table-footer">
         <label>Filas por página:
           <select [value]="filasPorPagina()" (change)="cambiarFilas($any($event.target).value)">
-            <option value="10">10</option><option value="25">25</option><option value="50">50</option>
+            <option value="all">Todos</option><option value="10">10</option><option value="25">25</option><option value="50">50</option>
           </select>
         </label>
-        <span>{{ desde() }}–{{ hasta() }} de {{ filtrados().length }}</span>
+        <span>{{ desde() }}–{{ hasta() }} de {{ store.eventos().length }}</span>
         <div class="pager">
           <button type="button" aria-label="Página anterior" [disabled]="paginaActual() === 1" (click)="pagina.set(paginaActual() - 1)">‹</button>
           <span>Página {{ paginaActual() }} de {{ totalPaginas() }}</span>

@@ -1,0 +1,7 @@
+{
+  "name": "gamehouse",
+  "private": true,
+  "scripts": {
+    "seed": "npm --prefix gamehouse-backend run seed"
+  }
+}

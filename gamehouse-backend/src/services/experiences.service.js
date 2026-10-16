@@ -3,6 +3,7 @@ const AppError = require('./utils/app-error');
 const generateSlug = require('./utils/slug');
 
 const getAllExperiences = () => experiencesRepo.findAll();
+const getFormOptions = () => experiencesRepo.getFormOptions();
 
 const getExperienceById = async (id) => {
   const experience = await experiencesRepo.findById(id);
@@ -61,6 +62,7 @@ const deleteExperience = async (id) => {
 
 module.exports = {
   getAllExperiences,
+  getFormOptions,
   getExperienceById,
   getExperienceBySlug,
   createExperience,

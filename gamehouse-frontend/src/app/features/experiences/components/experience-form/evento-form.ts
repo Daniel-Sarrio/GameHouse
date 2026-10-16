@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, input, output } from '@angular/core';
 import { AbstractControl, ReactiveFormsModule, ValidationErrors, Validators, NonNullableFormBuilder } from '@angular/forms';
 import { DatosEvento, Evento } from '../../../../core/models/experience.model';
+import { EventosService, OpcionesEvento } from '../../../../core/services/experience.service';
 
 function isHttpUrl(value: string): boolean {
   try {
@@ -35,6 +36,9 @@ function positiveInteger(control: AbstractControl): ValidationErrors | null {
 })
 export class EventoForm implements OnInit {
   private readonly fb = inject(NonNullableFormBuilder);
+  private readonly eventosService = inject(EventosService);
+  opciones: OpcionesEvento = { hosts: [], locations: [], categories: [] };
+  errorOpciones: string | null = null;
   readonly evento = input<Evento | null>(null);
   readonly guardando = input(false);
   readonly errorServidor = input<string | null>(null);
@@ -45,6 +49,7 @@ export class EventoForm implements OnInit {
     name: this.fb.control('', [Validators.required, nonBlank, Validators.minLength(5), Validators.maxLength(120)]),
     description: this.fb.control('', [Validators.required, nonBlank, Validators.minLength(20), Validators.maxLength(2000)]),
     location: this.fb.control('', [Validators.required, nonBlank, Validators.minLength(2), Validators.maxLength(150)]),
+    locationId: this.fb.control(0, [Validators.min(1)]),
     country: this.fb.control('España', [Validators.required, nonBlank, Validators.minLength(2), Validators.maxLength(100)]),
     city: this.fb.control('Valencia', [Validators.required, nonBlank, Validators.minLength(2), Validators.maxLength(100)]),
     price: this.fb.control(0, [Validators.required, Validators.min(0)]),
@@ -54,16 +59,20 @@ export class EventoForm implements OnInit {
     coverImage: this.fb.control('', [Validators.required, validUrl]),
     gallery: this.fb.control('', [galleryUrls]),
     hostName: this.fb.control('', [Validators.required, nonBlank, Validators.minLength(2), Validators.maxLength(100)]),
+    hostId: this.fb.control(0, [Validators.min(1)]),
+    categoryIds: this.fb.control<number[]>([], [Validators.required, Validators.minLength(1)]),
     status: this.fb.control<Evento['status']>('published', [Validators.required]),
     isActive: this.fb.control(true),
   });
 
   ngOnInit(): void {
+    void this.cargarOpciones();
     const evento = this.evento();
     if (evento) this.form.setValue({
       name: evento.name,
       description: evento.description || '',
       location: evento.location,
+      locationId: evento.locationId,
       country: evento.country,
       city: evento.city,
       price: evento.price,
@@ -73,10 +82,35 @@ export class EventoForm implements OnInit {
       coverImage: evento.coverImage,
       gallery: evento.gallery.join('\n'),
       hostName: evento.hostName,
+      hostId: evento.hostId,
+      categoryIds: evento.categoryIds,
       status: evento.status,
       isActive: evento.isActive,
     });
   }
+
+  async cargarOpciones(): Promise<void> {
+    try { this.opciones = await this.eventosService.obtenerOpcionesFormulario(); this.errorOpciones = null; }
+    catch { this.errorOpciones = 'No se pudieron cargar organizadores, lugares y categorías.'; }
+  }
+
+  seleccionarLugar(): void {
+    const lugar = this.opciones.locations.find((item) => item.id === Number(this.form.controls.locationId.value));
+    this.form.patchValue({ location: lugar?.name ?? '', city: lugar?.city ?? '', country: lugar?.country ?? '' });
+  }
+
+  seleccionarOrganizador(): void {
+    const host = this.opciones.hosts.find((item) => item.id === Number(this.form.controls.hostId.value));
+    this.form.controls.hostName.setValue(host?.name ?? '');
+  }
+
+  cambiarCategoria(id: number, checked: boolean): void {
+    const ids = this.form.controls.categoryIds.value;
+    this.form.controls.categoryIds.setValue(checked ? [...ids, id] : ids.filter((value) => value !== id));
+    this.form.controls.categoryIds.markAsTouched();
+  }
+
+  categoriaSeleccionada(id: number): boolean { return this.form.controls.categoryIds.value.includes(id); }
 
   error(field: keyof typeof this.form.controls): string | null {
     const control = this.form.controls[field];
@@ -93,6 +127,7 @@ export class EventoForm implements OnInit {
   }
 
   onSubmit(): void {
+    if (this.errorOpciones) return;
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;

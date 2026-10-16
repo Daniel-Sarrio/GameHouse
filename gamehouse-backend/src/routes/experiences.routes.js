@@ -12,6 +12,7 @@ const router = express.Router();
 const validateId = validate({ params: idParamsSchema });
 
 router.get('/', experiencesCtrl.getAllExperiences);
+router.get('/form-options', experiencesCtrl.getFormOptions);
 router.get('/slug/:slug', validate({ params: slugParamsSchema }), experiencesCtrl.getExperienceBySlug);
 router.get('/:id', validateId, experiencesCtrl.getExperienceById);
 router.post('/', validate({ body: createExperienceSchema }), experiencesCtrl.createExperience);
