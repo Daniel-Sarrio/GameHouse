@@ -15,26 +15,31 @@ import { EventosStore } from '../../../../core/stores/experiences.store';
 export class EventoFormPage implements OnInit {
   protected store = inject(EventosStore);
   private readonly router = inject(Router);
-  slug = input<string>();
-  protected editando = computed(() => !!this.slug());
+  id = input<string>();
+  protected editando = computed(() => this.id() !== undefined);
 
   ngOnInit(): void {
     this.store.limpiarErrorAccion();
-    if (this.slug()) void this.store.cargarEvento(this.slug()!);
+    if (this.editando()) void this.store.cargarEventoPorId(Number(this.id()));
   }
 
   async onGuardar(datos: DatosEvento): Promise<void> {
-    const evento = this.store.eventoActual();
-    const resultado = this.slug() && evento
-      ? await this.store.modificarEvento(evento.id, datos)
-      : await this.store.crearEvento(datos);
-    if (resultado) await this.router.navigate(['/eventos', resultado.slug]);
+    try {
+      const evento = this.store.eventoActual();
+      if (this.editando() && !evento) return;
+      const resultado = this.editando() && evento
+        ? await this.store.modificarEvento(evento.id, datos)
+        : await this.store.crearEvento(datos);
+      if (resultado) await this.router.navigate(['/experiencias', resultado.slug]);
+    } catch (error) {
+      this.store.errorAccion.set(error instanceof Error ? error.message : 'No se pudieron guardar los cambios.');
+    }
   }
 
   onCancelar(): void {
-    const slug = this.slug();
-    void this.router.navigate(slug ? ['/eventos', slug] : ['/']);
+    const evento = this.store.eventoActual();
+    void this.router.navigate(this.editando() && evento ? ['/experiencias', evento.slug] : ['/']);
   }
 
-  reintentar(): void { if (this.slug()) void this.store.cargarEvento(this.slug()!); }
+  reintentar(): void { if (this.editando()) void this.store.cargarEventoPorId(Number(this.id())); }
 }

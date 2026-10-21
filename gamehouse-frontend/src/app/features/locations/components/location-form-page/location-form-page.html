@@ -1,0 +1,15 @@
+<div class="contenedor pagina">
+  <a routerLink="/lugares" class="volver">← Volver a lugares</a>
+  <p class="eyebrow">GAMEHOUSE / {{ editando() ? 'EDITAR' : 'CREAR' }}</p>
+  <h1>{{ editando() ? 'Editar lugar' : 'Nuevo lugar' }}</h1>
+  <p class="subtitulo">Completa los datos de este lugar.</p>
+  @if (!editando()) {
+    <app-location-form [guardando]="store.guardando()" [errorServidor]="store.errorAccion()" (guardar)="onGuardar($event)" (cancelar)="onCancelar()" />
+  } @else if (store.cargandoDetalle()) {
+    <app-estado-carga texto="Cargando lugar…" />
+  } @else if (store.errorDetalle(); as mensaje) {
+    <app-mensaje-error [mensaje]="mensaje" (reintentar)="reintentar()" />
+  } @else if (store.lugarActual(); as actual) {
+    <app-location-form [lugar]="actual" [guardando]="store.guardando()" [errorServidor]="store.errorAccion()" (guardar)="onGuardar($event)" (cancelar)="onCancelar()" />
+  }
+</div>

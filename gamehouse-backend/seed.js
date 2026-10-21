@@ -1,6 +1,7 @@
 require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 
 const pool = require('./src/config/database');
+const generateSlug = require('./src/services/utils/slug');
 
 const hosts = [
   'Equipo GameHouse',
@@ -18,6 +19,7 @@ const locations = [
 ];
 
 const categories = ['Torneos', 'Realidad Virtual', 'Simuladores', 'Gaming', 'Escape Rooms'];
+const roles = ['ADMIN', 'HOST', 'USER'];
 
 const events = [
   {
@@ -82,72 +84,67 @@ async function seed() {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-
-    for (const name of hosts) {
-      await client.query('INSERT INTO hosts (name) VALUES ($1) ON CONFLICT (name) DO NOTHING', [name]);
-    }
-    for (const { name, city, country } of locations) {
-      await client.query(`INSERT INTO locations (name, city, country) VALUES ($1, $2, $3)
-        ON CONFLICT (name, city, country) DO NOTHING`, [name, city, country]);
-    }
-    for (const name of categories) {
-      await client.query('INSERT INTO categories (name) VALUES ($1) ON CONFLICT (name) DO NOTHING', [name]);
-    }
+    for (const name of roles) await client.query(
+      'INSERT INTO roles (name) VALUES ($1) ON CONFLICT (name) DO NOTHING', [name]);
+    for (const name of hosts) await client.query(
+      'INSERT INTO hosts (name, slug) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING', [name, generateSlug(name)]);
+    for (const { name, city, country } of locations) await client.query(
+      'INSERT INTO locations (name, city, country) VALUES ($1, $2, $3) ON CONFLICT (name, city, country) DO NOTHING',
+      [name, city, country]);
+    for (const name of categories) await client.query(
+      'INSERT INTO categories (name, slug) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING', [name, generateSlug(name)]);
 
     const hostRows = (await client.query('SELECT id, name FROM hosts')).rows;
-    const locationRows = (await client.query('SELECT id, name, city, country FROM locations')).rows;
+    const locationRows = (await client.query('SELECT id, name FROM locations')).rows;
     const categoryRows = (await client.query('SELECT id, name FROM categories')).rows;
-    for (const [entityType, rows] of [
-      ['hosts', hostRows], ['locations', locationRows], ['categories', categoryRows],
-    ]) {
+    for (const [entityType, rows] of [['hosts', hostRows], ['locations', locationRows], ['categories', categoryRows]]) {
       for (const row of rows) {
-        const imageUrl = `https://picsum.photos/seed/gamehouse-${entityType}-${row.id}/800/600`;
-        await client.query(`INSERT INTO images (entity_type, entity_id, url, is_main, position)
-          VALUES ($1, $2, $3, TRUE, 0)
-          ON CONFLICT (entity_type, entity_id, position) DO NOTHING`,
-        [entityType, row.id, imageUrl]);
-        if (entityType === 'locations') {
-          await client.query('UPDATE locations SET image_url = $1 WHERE id = $2 AND image_url IS NULL',
-            [imageUrl, row.id]);
-        }
+        const imageUrl = 'https://picsum.photos/seed/gamehouse-' + entityType + '-' + row.id + '/800/600';
+        await client.query('UPDATE ' + entityType + ' SET image_url = $1 WHERE id = $2 AND image_url IS NULL', [imageUrl, row.id]);
       }
     }
-    const results = [];
-
-    for (const event of events) {
-      const host = hostRows.find((row) => row.name === event.host);
-      const location = locationRows.find((row) => row.name === event.location);
-      const categoryIds = event.categories.map((name) => categoryRows.find((row) => row.name === name)?.id);
-      if (!host || !location || categoryIds.some((id) => !id)) {
-        throw new Error(`Falta un dato de referencia para ${event.name}.`);
-      }
-
-      const coverImage = `https://picsum.photos/seed/${event.image}/1200/800`;
-      const gallery = [
-        `https://picsum.photos/seed/${event.image}-1/1200/800`,
-        `https://picsum.photos/seed/${event.image}-2/1200/800`,
-      ];
-      const inserted = await client.query(`INSERT INTO experiences (
-        name, slug, description, location, country, city, price, currency,
-        duration, capacity, cover_image, gallery, host_name, host_id, location_id,
-        status, is_active
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,'EUR',$8,$9,$10,$11,$12,$13,$14,$15,TRUE)
-      ON CONFLICT (slug) DO NOTHING RETURNING id`, [
-        event.name, event.slug, event.description, location.name, location.country,
-        location.city, event.price, event.duration, event.capacity, coverImage,
-        gallery, host.name, host.id, location.id, event.status,
-      ]);
-
-      if (inserted.rowCount) {
-        await client.query(`INSERT INTO experience_categories (experience_id, category_id)
-          SELECT $1, unnest($2::int[])`, [inserted.rows[0].id, categoryIds]);
-      }
-      results.push({ name: event.name, result: inserted.rowCount ? 'creado' : 'ya existía' });
+    let createdExperiences = 0;
+    let createdEvents = 0;
+    for (const [index, item] of events.entries()) {
+      const host = hostRows.find((row) => row.name === item.host);
+      const location = locationRows.find((row) => row.name === item.location);
+      const categoryIds = item.categories.map((name) => categoryRows.find((row) => row.name === name)?.id);
+      if (!host || !location || categoryIds.some((id) => !id)) throw new Error('Faltan referencias para ' + item.name);
+      const imageUrl = 'https://picsum.photos/seed/' + item.image + '/1200/800';
+      const inserted = await client.query(
+        'INSERT INTO experiences (name, slug, description, image_url, host_id, status, is_active) VALUES ($1,$2,$3,$4,$5,$6,TRUE) ON CONFLICT (slug) DO NOTHING RETURNING id',
+        [item.name, item.slug, item.description, imageUrl, host.id, item.status]);
+      if (inserted.rowCount) createdExperiences++;
+      const experience = inserted.rows[0] || (await client.query('SELECT id FROM experiences WHERE slug = $1', [item.slug])).rows[0];
+      for (const categoryId of categoryIds) await client.query(
+        'INSERT INTO experience_categories (experience_id, category_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',
+        [experience.id, categoryId]);
+      const start = new Date(Date.UTC(2026, 10, 20 + index, 18, 0));
+      const end = new Date(start.getTime() + item.duration * 60000);
+      const startText = start.toISOString().slice(0, 19);
+      const endText = end.toISOString().slice(0, 19);
+      const event = await client.query(
+        'INSERT INTO events (experience_id, location_id, category_id, start_datetime, end_datetime, price, capacity, status, image_url) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT DO NOTHING RETURNING id',
+        [experience.id, location.id, categoryIds[0], startText, endText, item.price, item.capacity, 'scheduled', imageUrl]);
+      if (event.rowCount) createdEvents++;
     }
-
+    // El mismo torneo se celebra dos veces con precio y capacidad distintos.
+    const fc = (await client.query("SELECT id FROM experiences WHERE slug IN ('torneo-fc27', 'torneo-de-fc27') ORDER BY id LIMIT 1")).rows[0];
+    if (fc) {
+      const location = locationRows.find((row) => row.name === 'GameHouse Arena');
+      const category = categoryRows.find((row) => row.name === 'Torneos');
+      if (location && category) for (const [start, end, price, capacity] of [
+        ['2026-11-20T18:00:00', '2026-11-20T21:00:00', 15, 32],
+        ['2026-12-05T17:00:00', '2026-12-05T20:00:00', 20, 64],
+      ]) {
+        const result = await client.query(
+          'INSERT INTO events (experience_id, location_id, category_id, start_datetime, end_datetime, price, capacity, status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT DO NOTHING RETURNING id',
+          [fc.id, location.id, category.id, start, end, price, capacity, 'scheduled']);
+        if (result.rowCount) createdEvents++;
+      }
+    }
     await client.query('COMMIT');
-    console.table(results);
-    console.log(`Seed completado: ${results.filter((item) => item.result === 'creado').length} eventos creados, ${results.filter((item) => item.result === 'ya existía').length} existentes.`);
+    console.log('Seed completado: ' + createdExperiences + ' experiencias y ' + createdEvents + ' eventos nuevos.');
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Error durante el seed:', error.message);
@@ -157,5 +154,4 @@ async function seed() {
     await pool.end();
   }
 }
-
 seed();

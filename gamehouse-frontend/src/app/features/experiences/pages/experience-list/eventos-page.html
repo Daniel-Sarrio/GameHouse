@@ -1,86 +1,47 @@
 <div class="admin-list-page mx-auto max-w-7xl px-6 py-8 sm:px-10 sm:py-10">
   <header class="page-header">
-    <div>
-      <p class="eyebrow">GameHouse / Administración</p>
-      <h1>Experiencias</h1>
-      <p class="page-description">Gestiona las experiencias de tu catálogo.</p>
-    </div>
-    <a routerLink="/eventos/nuevo" class="boton boton-primario"><svg lucidePlus [size]="18" aria-hidden="true"></svg> Nueva experiencia</a>
+    <div><p class="eyebrow">GameHouse / Administración</p><h1>Experiencias</h1><p class="page-description">Catálogo de actividades reutilizables. El lugar, el precio y la fecha se definen en cada evento.</p></div>
+    <a routerLink="/experiencias/nuevo" class="boton boton-primario"><svg lucidePlus [size]="18" aria-hidden="true"></svg> Nueva experiencia</a>
   </header>
-
   <section class="list-panel" aria-label="Listado de experiencias">
     @if (store.cargando() && store.eventos().length === 0) {
       <div class="list-feedback"><app-skeleton-loader /></div>
     } @else if (store.error(); as mensaje) {
       <div class="list-feedback"><app-mensaje-error [mensaje]="mensaje" (reintentar)="reintentar()" /></div>
     } @else if (store.eventos().length === 0) {
-      <div class="list-feedback"><app-empty-state title="Aún no hay experiencias" description="Crea la primera experiencia para empezar a gestionar el catálogo." /></div>
+      <div class="list-feedback"><app-empty-state title="Aún no hay experiencias" description="Crea la primera experiencia para empezar." /></div>
     } @else {
-      <div class="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">ID</th><th scope="col">Nombre</th><th scope="col">Slug</th>
-              <th scope="col">Descripción</th><th scope="col">Lugar</th><th scope="col">Ciudad</th><th scope="col">País</th>
-              <th scope="col">Precio</th><th scope="col">Moneda</th><th scope="col">Duración</th><th scope="col">Capacidad</th>
-              <th scope="col">Portada</th><th scope="col">Galería</th><th scope="col">Organizador</th><th scope="col">ID organizador</th>
-              <th scope="col">ID lugar</th><th scope="col">Categorías</th><th scope="col">IDs categorías</th>
-              <th scope="col">Estado</th><th scope="col">Activa</th><th scope="col">Creado</th><th scope="col">Actualizado</th><th scope="col">Eliminado</th>
-              <th scope="col" class="actions-heading">Acciones</th>
+      <div class="table-scroll"><table>
+        <thead><tr><th scope="col">ID</th><th scope="col">Experiencia</th><th scope="col">Organizador</th><th scope="col">Categorías</th><th scope="col">Eventos</th><th scope="col">Estado</th><th scope="col" class="actions-heading">Acciones</th></tr></thead>
+        <tbody>
+          @for (evento of visibles(); track evento.id) {
+            <tr [class.inactive-row]="!evento.isActive">
+              <td class="id-cell">{{ evento.id }}</td>
+              <td class="experience-cell">
+                @if (evento.isActive) { <a class="experience-name" [routerLink]="['/experiencias', evento.slug]">{{ evento.name }}</a> }
+                @else { <span class="experience-name">{{ evento.name }}</span> }
+                <span class="experience-slug">{{ evento.slug }}</span>
+                <p class="experience-description">{{ evento.description || 'Sin descripción' }}</p>
+              </td>
+              <td>{{ evento.hostName }}</td>
+              <td class="categories-cell"><span class="category-chip">{{ categorias(evento) }}</span></td>
+              <td>{{ evento.eventCount }}</td>
+              <td><span class="status-pill" [class.inactive]="!evento.isActive">{{ estado(evento) }} · {{ evento.isActive ? 'Activa' : 'Inactiva' }}</span></td>
+              <td><div class="row-actions">
+                @if (evento.isActive) {
+                  <a [routerLink]="['/experiencias', evento.slug]" [attr.aria-label]="'Ver ' + evento.name"><svg lucideEye [size]="17" aria-hidden="true"></svg><span>Ver</span></a>
+                  <a [routerLink]="['/experiencias', evento.id, 'editar']" [attr.aria-label]="'Editar ' + evento.name"><svg lucidePencil [size]="16" aria-hidden="true"></svg><span>Editar</span></a>
+                }
+                <button type="button" [disabled]="store.guardando()" (click)="cambiarEstado(evento)"><svg lucidePower [size]="16" aria-hidden="true"></svg><span>{{ evento.isActive ? 'Desactivar' : 'Activar' }}</span></button>
+              </div></td>
             </tr>
-          </thead>
-          <tbody>
-            @for (evento of visibles(); track evento.id) {
-              <tr>
-                <td class="id-cell">{{ evento.id }}</td>
-                <td class="name-cell"><a [routerLink]="['/eventos', evento.slug]">{{ evento.name }}</a></td>
-                <td class="text-cell">{{ evento.slug }}</td>
-                <td class="description-cell">{{ evento.description || '—' }}</td>
-                <td>{{ evento.location }}</td>
-                <td>{{ evento.city }}</td>
-                <td>{{ evento.country }}</td>
-                <td class="price-cell">{{ evento.price }}</td>
-                <td>{{ evento.currency }}</td>
-                <td>{{ evento.duration }} min</td>
-                <td>{{ evento.capacity }}</td>
-                <td class="url-cell"><a class="media-link" [href]="evento.coverImage" target="_blank" rel="noopener noreferrer">{{ evento.coverImage }}</a></td>
-                <td class="gallery-cell">@for (imagen of evento.gallery; track $index) { <a class="media-link" [href]="imagen" target="_blank" rel="noopener noreferrer">{{ imagen }}</a> } @empty { — }</td>
-                <td>{{ evento.hostName }}</td>
-                <td>{{ evento.hostId }}</td>
-                <td>{{ evento.locationId }}</td>
-                <td class="text-cell">{{ categorias(evento) }}</td>
-                <td>{{ evento.categoryIds.join(', ') || '—' }}</td>
-                <td>{{ evento.status }}</td>
-                <td><span class="status-pill" [class.inactive]="!evento.isActive">{{ evento.isActive ? 'Sí' : 'No' }}</span></td>
-                <td>{{ evento.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
-                <td>{{ evento.updatedAt | date:'dd/MM/yyyy HH:mm' }}</td>
-                <td>{{ evento.deletedAt ? (evento.deletedAt | date:'dd/MM/yyyy HH:mm') : '—' }}</td>
-                <td>
-                  <div class="row-actions">
-                    <a [routerLink]="['/eventos', evento.slug]" [attr.aria-label]="'Ver ' + evento.name" title="Ver"><svg lucideEye [size]="17" aria-hidden="true"></svg><span>Ver</span></a>
-                    <a [routerLink]="['/eventos', evento.slug, 'editar']" [attr.aria-label]="'Editar ' + evento.name" title="Editar"><svg lucidePencil [size]="16" aria-hidden="true"></svg><span>Editar</span></a>
-                    <button type="button" [disabled]="store.guardando()" (click)="cambiarEstado(evento)" [attr.aria-label]="(evento.isActive ? 'Desactivar ' : 'Activar ') + evento.name" [attr.title]="evento.isActive ? 'Desactivar' : 'Activar'"><svg lucidePower [size]="16" aria-hidden="true"></svg><span>{{ evento.isActive ? 'Desactivar' : 'Activar' }}</span></button>
-                  </div>
-                </td>
-              </tr>
-            } @empty {
-              <tr><td colspan="24" class="no-results">No hay experiencias.</td></tr>
-            }
-          </tbody>
-        </table>
-      </div>
+          }
+        </tbody>
+      </table></div>
       <footer class="table-footer">
-        <label>Filas por página:
-          <select [value]="filasPorPagina()" (change)="cambiarFilas($any($event.target).value)">
-            <option value="all">Todos</option><option value="10">10</option><option value="25">25</option><option value="50">50</option>
-          </select>
-        </label>
+        <label>Filas por página: <select [value]="filasPorPagina()" (change)="cambiarFilas($any($event.target).value)"><option value="all">Todos</option><option value="10">10</option><option value="25">25</option><option value="50">50</option></select></label>
         <span>{{ desde() }}–{{ hasta() }} de {{ store.eventos().length }}</span>
-        <div class="pager">
-          <button type="button" aria-label="Página anterior" [disabled]="paginaActual() === 1" (click)="pagina.set(paginaActual() - 1)">‹</button>
-          <span>Página {{ paginaActual() }} de {{ totalPaginas() }}</span>
-          <button type="button" aria-label="Página siguiente" [disabled]="paginaActual() === totalPaginas()" (click)="pagina.set(paginaActual() + 1)">›</button>
-        </div>
+        <div class="pager"><button type="button" aria-label="Página anterior" [disabled]="paginaActual() === 1" (click)="pagina.set(paginaActual() - 1)">‹</button><span>Página {{ paginaActual() }} de {{ totalPaginas() }}</span><button type="button" aria-label="Página siguiente" [disabled]="paginaActual() === totalPaginas()" (click)="pagina.set(paginaActual() + 1)">›</button></div>
       </footer>
     }
   </section>

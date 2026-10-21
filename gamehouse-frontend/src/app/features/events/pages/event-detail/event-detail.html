@@ -1,0 +1,35 @@
+<div class="contenedor detalle">
+  <a routerLink="/eventos" class="volver">← Volver a todos los eventos</a>
+  @if (store.cargandoDetalle()) {
+    <app-estado-carga texto="Cargando evento…" />
+  } @else if (store.errorDetalle(); as mensaje) {
+    <app-mensaje-error [mensaje]="mensaje" (reintentar)="reintentar()" />
+  } @else if (store.celebracionActual(); as event) {
+    <article class="ficha">
+      <div class="cabecera" [style.background-image]="event.imageUrl ? 'linear-gradient(90deg, rgba(16,32,101,.92), rgba(48,72,198,.55)), url(' + event.imageUrl + ')' : null">
+        <p>GAMEHOUSE / EVENTO #{{ event.id }}</p><h1>{{ event.experienceName }}</h1>
+      </div>
+      <div class="contenido"><dl class="datos">
+        <div><dt>Experiencia</dt><dd><a [routerLink]="['/experiencias', event.experienceSlug]">{{ event.experienceName }}</a></dd></div>
+        <div><dt> Categoría</dt><dd>{{ event.categoryName }}</dd></div>
+        <div><dt>Lugar</dt><dd>{{ event.locationName }} · {{ event.city }}, {{ event.country }}</dd></div>
+        <div><dt>Inicio</dt><dd>{{ fecha(event.startDatetime) }}</dd></div>
+        <div><dt>Fin</dt><dd>{{ fecha(event.endDatetime) }}</dd></div>
+        @if (event.durationMinutes) { <div><dt>Duración anterior</dt><dd>{{ event.durationMinutes }} minutos</dd></div> }
+        <div><dt>Precio</dt><dd>{{ precio(event.price) }}</dd></div>
+        <div><dt>Capacidad</dt><dd>{{ event.capacity }} personas</dd></div>
+        <div><dt>Estado</dt><dd>{{ event.status }}</dd></div>
+        @if (event.legacyExperienceId) { <div><dt>Origen</dt><dd>Importado de la experiencia anterior #{{ event.legacyExperienceId }}</dd></div> }
+      </dl></div>
+    </article>
+    @if (store.errorAccion(); as mensaje) { <div class="alerta" role="alert">{{ mensaje }}</div> }
+    <div class="acciones">
+      <a class="boton boton-primario" [routerLink]="['/eventos', event.id, 'editar']">Editar evento</a>
+      @if (!confirmandoBorrado()) { <button type="button" class="boton boton-peligro" (click)="confirmandoBorrado.set(true)">Eliminar</button> }
+      @else { <span class="confirmar">¿Eliminar este evento?
+        <button type="button" class="boton boton-peligro" [disabled]="store.guardando()" (click)="eliminar()">Sí, eliminar</button>
+        <button type="button" class="boton boton-secundario" (click)="confirmandoBorrado.set(false)">Cancelar</button>
+      </span> }
+    </div>
+  }
+</div>

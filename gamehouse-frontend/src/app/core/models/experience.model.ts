@@ -1,29 +1,20 @@
-// Los nombres y tipos son los que devuelve el backend PostgreSQL de GameHouse.
+// La experiencia define el catálogo; lugar, fechas y precio pertenecen a events.
 export interface Evento {
   id: number;
   name: string;
   slug: string;
   description: string | null;
-  location: string;
-  country: string;
-  city: string;
-  price: number;
-  currency: string;
-  duration: number;
-  capacity: number;
-  coverImage: string;
-  gallery: string[];
-  hostName: string;
+  imageUrl: string | null;
   hostId: number;
-  locationId: number;
+  hostName: string;
   categoryIds: number[];
-  categoryNames?: string[];
+  categoryNames: string[];
+  eventCount: number;
   status: 'draft' | 'published' | 'archived' | 'suspended';
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
 }
-
-export type DatosEvento = Omit<Evento, 'id' | 'slug' | 'categoryNames' | 'createdAt' | 'updatedAt' | 'deletedAt'>;
+export type DatosEvento = Pick<Evento, 'name' | 'description' | 'imageUrl' | 'hostId' | 'categoryIds' | 'status' | 'isActive'>;
 export type CambiosEvento = Partial<DatosEvento>;

@@ -1,0 +1,5 @@
+.pagina { padding-block: 2.5rem 5rem; }
+.volver { color: var(--azul); font-weight: 750; text-decoration: none; }
+.eyebrow { margin: 2rem 0 .5rem; color: var(--azul); font-size: .74rem; font-weight: 900; letter-spacing: .18em; }
+h1 { margin: 0; font-size: clamp(2rem, 5vw, 3rem); letter-spacing: -.05em; }
+.subtitulo { color: var(--suave); margin: .4rem 0 2rem; }

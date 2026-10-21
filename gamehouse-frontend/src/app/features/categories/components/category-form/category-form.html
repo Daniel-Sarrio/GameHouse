@@ -1,0 +1,26 @@
+<form class="formulario" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+  @if (errorServidor(); as mensaje) { <div class="alerta" role="alert">{{ mensaje }}</div> }
+  <h2>Datos de la categoría</h2>
+  <label class="campo">Nombre
+    <input formControlName="name" type="text" maxlength="100" />
+    @if (error('name'); as mensaje) { <small class="field-error">{{ mensaje }}</small> }
+  </label>
+  <label class="campo">Descripción
+    <textarea formControlName="description" rows="5" maxlength="2000"></textarea>
+    @if (error('description'); as mensaje) { <small class="field-error">{{ mensaje }}</small> }
+  </label>
+  <label class="campo">URL de imagen
+    <input formControlName="imageUrl" type="url" placeholder="https://..." />
+    @if (error('imageUrl'); as mensaje) { <small class="field-error">{{ mensaje }}</small> }
+  </label>
+  <div class="fila">
+    <label class="campo">Estado
+      <select formControlName="status"><option value="draft">Borrador</option><option value="published">Publicado</option><option value="archived">Archivado</option><option value="suspended">Suspendido</option></select>
+    </label>
+    <label class="campo campo-check"><input formControlName="isActive" type="checkbox" /> Categoría activa</label>
+  </div>
+  <div class="acciones">
+    <button type="submit" class="boton boton-primario" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : categoria() ? 'Guardar cambios' : 'Crear categoría' }}</button>
+    <button type="button" class="boton boton-secundario" (click)="cancelar.emit()">Cancelar</button>
+  </div>
+</form>

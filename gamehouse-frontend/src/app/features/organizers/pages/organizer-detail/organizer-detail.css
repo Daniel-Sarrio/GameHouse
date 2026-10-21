@@ -1,0 +1,26 @@
+.detalle { padding-block: 2.5rem 5rem; }
+.volver { color: var(--azul); font-weight: 750; text-decoration: none; }
+.ficha { margin-top: 1.5rem; border: 1px solid var(--borde); border-radius: 22px; overflow: hidden; background: #fff; }
+.ficha-inactiva { border: 2px solid #d97706; background: #fffbeb; }
+.ficha-inactiva .cabecera { filter: grayscale(.75); }
+.inactive-banner { display: flex; flex-wrap: wrap; gap: .4rem 1rem; align-items: center; margin-top: 1.5rem; padding: 1rem 1.2rem; border: 1px solid #f59e0b; border-radius: 12px; background: #92400e; color: #fff; }
+.inactive-banner strong { font-size: .8rem; letter-spacing: .12em; }
+.inactive-banner span { font-size: .84rem; }
+.status-pill { display: inline-block; padding: .28rem .65rem; border-radius: 999px; background: #d1fae5; color: #047857; font-size: .88rem; }
+.status-pill.status-off { background: #92400e; color: #fff; }
+.cabecera { min-height: 260px; padding: clamp(1.5rem, 5vw, 3rem); background-color: #102065; background-position: center; background-size: cover; color: #fff; display: flex; flex-direction: column; justify-content: flex-end; }
+.cabecera p { letter-spacing: .18em; font-size: .76rem; font-weight: 800; }
+h1 { max-width: 800px; margin: .3rem 0 0; font-size: clamp(2.2rem, 6vw, 3.7rem); letter-spacing: -.05em; line-height: 1.05; }
+.contenido { padding: clamp(1.4rem, 4vw, 2.5rem); }
+.descripcion { max-width: 700px; color: var(--suave); font-size: 1.1rem; line-height: 1.7; margin: 0 0 2rem; }
+.ubicacion { color: var(--azul); font-weight: 750; }
+.datos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 0; }
+.datos div { border-top: 1px solid var(--borde); padding-top: 1rem; }
+dt { color: var(--suave); font-size: .8rem; text-transform: uppercase; }
+dd { margin: .3rem 0 0; font-size: 1.2rem; font-weight: 800; }
+.acciones { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem; margin-top: 1.3rem; }
+.confirmar { display: inline-flex; flex-wrap: wrap; align-items: center; gap: .6rem; }
+.alerta { margin-top: 1rem; color: #872b26; background: #fff2f1; border: 1px solid #f0c9c6; border-radius: 10px; padding: .9rem; }
+.galeria { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; margin-top: 2rem; }
+.galeria img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 12px; }
+@media (max-width: 650px) { .datos, .galeria { grid-template-columns: 1fr; } }

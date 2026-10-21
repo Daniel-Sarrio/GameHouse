@@ -1,57 +1,41 @@
-# Probar GameHouse con Postman
+# Ejemplos de API para Postman
 
-Ejecuta primero `npm run migrate` y `npm run dev`. La URL base es `http://localhost:3000/api/experiences`.
+La experiencia es genérica y puede reutilizarse en varios eventos.
 
-## Crear
+## Crear experiencia
 
-`POST /api/experiences` con Body → raw → JSON:
+`POST /api/experiences`
 
 ```json
 {
-  "name": "Simulador de carreras",
-  "description": "Compite en circuitos virtuales con volante, pedales y asistencia del equipo.",
-  "location": "GameHouse Racing Zone",
-  "country": "España",
-  "city": "Valencia",
-  "price": 18.5,
-  "currency": "EUR",
-  "duration": 45,
-  "capacity": 4,
-  "coverImage": "https://picsum.photos/seed/simulador/1200/800",
-  "gallery": ["https://picsum.photos/seed/simulador-1/1200/800"],
-  "hostName": "Equipo GameHouse",
+  "name": "Torneo FC27",
+  "description": "Torneo presencial con varias rondas y premios.",
+  "imageUrl": "https://picsum.photos/seed/fc27/1200/800",
+  "hostId": 1,
+  "categoryIds": [1],
   "status": "published",
   "isActive": true
 }
 ```
 
-La respuesta `201` incluye el `id`, el `slug` generado y las fechas.
+Los IDs deben existir en la base de datos. Consulta `GET /api/experiences/form-options` para organizadores y categorías.
 
-## Consultar
+## Crear evento
 
-- `GET /api/experiences`: lista experiencias no eliminadas.
-- `GET /api/experiences/1`: consulta por ID.
-- `GET /api/experiences/slug/simulador-de-carreras`: consulta por slug.
-
-## Actualizar
-
-`PATCH /api/experiences/1` permite enviar uno o varios campos:
+`POST /api/events`
 
 ```json
 {
-  "price": 20,
-  "capacity": 6
+  "experienceId": 5,
+  "locationId": 1,
+  "categoryId": 1,
+  "startDatetime": "2026-11-20T18:00",
+  "endDatetime": "2026-11-20T21:00",
+  "price": 15,
+  "capacity": 32,
+  "status": "scheduled",
+  "imageUrl": "https://picsum.photos/seed/fc27-valencia/1200/800"
 }
 ```
 
-Si se cambia `name`, el backend vuelve a generar un slug único.
-
-## Activar, desactivar y eliminar
-
-- `PATCH /api/experiences/1/activate`
-- `PATCH /api/experiences/1/deactivate`
-- `DELETE /api/experiences/1`
-
-DELETE no borra la fila de PostgreSQL: asigna `deleted_at`, `is_active = false` y `status = "archived"`. Después, los endpoints GET dejan de devolverla.
-
-Un body inválido devuelve `400` y un array `errors` con cada campo incorrecto. Un ID o slug que no exista devuelve `404`.
+Consulta `GET /api/events/form-options` para las experiencias, lugares y categorías permitidas. Otra fila con el mismo `experienceId` puede tener lugar, fechas, precio y capacidad distintos. Los eventos `scheduled` requieren dos fechas válidas; los borradores pueden guardarse sin fechas.

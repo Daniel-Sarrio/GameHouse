@@ -1,0 +1,15 @@
+<div class="contenedor pagina">
+  <a routerLink="/eventos" class="volver">← Volver a eventos</a>
+  <p class="eyebrow">GAMEHOUSE / {{ editando() ? 'EDITAR' : 'CREAR' }}</p>
+  <h1>{{ editando() ? 'Editar evento' : 'Nuevo evento' }}</h1>
+  <p class="subtitulo">Un evento es una celebración concreta de una experiencia.</p>
+  @if (!editando()) {
+    <app-event-form [guardando]="store.guardando()" [errorServidor]="store.errorAccion()" (guardar)="onGuardar($event)" (cancelar)="onCancelar()" />
+  } @else if (store.cargandoDetalle()) {
+    <app-estado-carga texto="Cargando evento…" />
+  } @else if (store.errorDetalle(); as mensaje) {
+    <app-mensaje-error [mensaje]="mensaje" (reintentar)="reintentar()" />
+  } @else if (store.celebracionActual(); as actual) {
+    <app-event-form [celebracion]="actual" [guardando]="store.guardando()" [errorServidor]="store.errorAccion()" (guardar)="onGuardar($event)" (cancelar)="onCancelar()" />
+  }
+</div>

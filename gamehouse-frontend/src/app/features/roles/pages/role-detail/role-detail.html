@@ -1,0 +1,25 @@
+<div class="contenedor detalle">
+  <a routerLink="/roles" class="volver">← Volver a todos los roles</a>
+  @if (store.cargandoDetalle()) {
+    <app-estado-carga texto="Cargando rol…" />
+  } @else if (store.errorDetalle(); as mensaje) {
+    <app-mensaje-error [mensaje]="mensaje" (reintentar)="reintentar()" />
+  } @else if (store.rolActual(); as rol) {
+    <article class="ficha">
+      <div class="cabecera"><p>GAMEHOUSE / ROLES</p><h1>{{ rol.name }}</h1></div>
+      <div class="contenido"><dl class="datos"><div><dt>ID</dt><dd>{{ rol.id }}</dd></div><div><dt>Nombre</dt><dd>{{ rol.name }}</dd></div></dl></div>
+    </article>
+    @if (store.errorAccion(); as mensaje) { <div class="alerta" role="alert">{{ mensaje }}</div> }
+    <div class="acciones">
+      <a class="boton boton-primario" [routerLink]="['/roles', rol.id, 'editar']">Editar rol</a>
+      @if (!confirmandoBorrado()) {
+        <button type="button" class="boton boton-peligro" (click)="confirmandoBorrado.set(true)">Eliminar</button>
+      } @else {
+        <span class="confirmar">¿Eliminar este rol?
+          <button type="button" class="boton boton-peligro" [disabled]="store.guardando()" (click)="eliminar()">Sí, eliminar</button>
+          <button type="button" class="boton boton-secundario" (click)="confirmandoBorrado.set(false)">Cancelar</button>
+        </span>
+      }
+    </div>
+  }
+</div>

@@ -1,27 +1,16 @@
 class Experience {
-  constructor({
-    id, name, slug, description, location, country, city, price, currency,
-    duration, capacity, cover_image, gallery, host_name, status, is_active,
-    host_id, location_id, category_ids, category_names, created_at, updated_at, deleted_at,
-  }) {
+  constructor({ id, name, slug, description, image_url, host_id, host_name,
+    category_ids, category_names, event_count, status, is_active, created_at, updated_at, deleted_at }) {
     this.id = id;
     this.name = name;
     this.slug = slug;
     this.description = description;
-    this.location = location;
-    this.country = country;
-    this.city = city;
-    this.price = Number(price);
-    this.currency = currency;
-    this.duration = duration;
-    this.capacity = capacity;
-    this.coverImage = cover_image;
-    this.gallery = gallery || [];
-    this.hostName = host_name;
+    this.imageUrl = image_url;
     this.hostId = host_id;
-    this.locationId = location_id;
+    this.hostName = host_name;
     this.categoryIds = category_ids || [];
     this.categoryNames = category_names || [];
+    this.eventCount = event_count;
     this.status = status;
     this.isActive = is_active;
     this.createdAt = created_at;
@@ -29,5 +18,4 @@ class Experience {
     this.deletedAt = deleted_at;
   }
 }
-
 module.exports = Experience;

@@ -42,13 +42,26 @@ export class EventosStore {
     }
   }
 
+  async cargarEventoPorId(id: number): Promise<void> {
+    this.eventoActual.set(null);
+    this.cargandoDetalle.set(true);
+    this.errorDetalle.set(null);
+    try {
+      this.eventoActual.set(await this.service.obtenerEventoPorId(id));
+    } catch (error) {
+      this.errorDetalle.set((error as Error).message);
+    } finally {
+      this.cargandoDetalle.set(false);
+    }
+  }
+
   async crearEvento(datos: DatosEvento): Promise<Evento | null> {
     const creado = await this.ejecutar(() => this.service.crearEvento(datos));
     if (creado) this.eventos.update((lista) => [...lista, creado].sort((a, b) => a.id - b.id));
     return creado;
   }
 
-  async modificarEvento(id: number | string, cambios: CambiosEvento): Promise<Evento | null> {
+  async modificarEvento(id: number, cambios: CambiosEvento): Promise<Evento | null> {
     const actualizado = await this.ejecutar(() => this.service.modificarEvento(id, cambios));
     if (actualizado) {
       this.eventos.update((lista) => lista.map((evento) => evento.id === actualizado.id ? actualizado : evento));

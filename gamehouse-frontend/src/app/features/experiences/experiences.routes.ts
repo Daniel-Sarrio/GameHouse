@@ -7,22 +7,22 @@ export const EXPERIENCES_ROUTES: Routes = [
     loadComponent: () => import('./pages/experience-list/eventos-page').then((m) => m.EventosPage),
   },
   {
-    path: 'eventos',
+    path: 'experiencias',
     title: 'Experiencias · GameHouse',
     loadComponent: () => import('./pages/experience-list/eventos-page').then((m) => m.EventosPage),
   },
   {
-    path: 'eventos/nuevo',
-    title: 'Crear evento · GameHouse',
+    path: 'experiencias/nuevo',
+    title: 'Crear experiencia · GameHouse',
     loadComponent: () => import('./pages/experience-create/experience-create').then((m) => m.ExperienceCreate),
   },
   {
-    path: 'eventos/:slug/editar',
-    title: 'Editar evento · GameHouse',
+    path: 'experiencias/:id/editar',
+    title: 'Editar experiencia · GameHouse',
     loadComponent: () => import('./pages/experience-edit/experience-edit').then((m) => m.ExperienceEdit),
   },
   {
-    path: 'eventos/:slug',
+    path: 'experiencias/:slug',
     title: 'Detalle · GameHouse',
     loadComponent: () => import('./pages/experience-detail/evento-detalle-page').then((m) => m.EventoDetallePage),
   },

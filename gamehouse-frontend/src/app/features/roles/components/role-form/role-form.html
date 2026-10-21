@@ -1,0 +1,12 @@
+<form class="formulario" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+  @if (errorServidor(); as mensaje) { <div class="alerta" role="alert">{{ mensaje }}</div> }
+  <h2>Datos del rol</h2>
+  <label class="campo">Nombre
+    <input formControlName="name" type="text" maxlength="50" />
+    @if (error(); as mensaje) { <small class="field-error">{{ mensaje }}</small> }
+  </label>
+  <div class="acciones">
+    <button type="submit" class="boton boton-primario" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : rol() ? 'Guardar cambios' : 'Crear rol' }}</button>
+    <button type="button" class="boton boton-secundario" (click)="cancelar.emit()">Cancelar</button>
+  </div>
+</form>

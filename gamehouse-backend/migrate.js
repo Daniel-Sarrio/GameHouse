@@ -7,6 +7,14 @@ async function migrate() {
   const client = await pool.connect();
 
   try {
+    const currentSchema = await client.query(`SELECT EXISTS (
+      SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'events'
+    ) AS has_events`);
+    if (currentSchema.rows[0].has_events) {
+      await client.query('ALTER TABLE experiences ALTER COLUMN host_id SET NOT NULL');
+      console.log('Migración de experiences y events ya aplicada.');
+      return;
+    }
     await client.query('BEGIN');
     await client.query(`
       ALTER TABLE experiences
@@ -44,6 +52,7 @@ async function migrate() {
       CREATE TABLE IF NOT EXISTS hosts (
         id SERIAL PRIMARY KEY, name VARCHAR(100) NOT NULL UNIQUE
       );
+      ALTER TABLE hosts ADD COLUMN IF NOT EXISTS slug VARCHAR(180);
       CREATE TABLE IF NOT EXISTS locations (
         id SERIAL PRIMARY KEY, name VARCHAR(150) NOT NULL,
         city VARCHAR(100) NOT NULL, country VARCHAR(100) NOT NULL,
@@ -54,6 +63,7 @@ async function migrate() {
       CREATE TABLE IF NOT EXISTS categories (
         id SERIAL PRIMARY KEY, name VARCHAR(100) NOT NULL UNIQUE
       );
+      ALTER TABLE categories ADD COLUMN IF NOT EXISTS slug VARCHAR(180);
       CREATE TABLE IF NOT EXISTS experience_categories (
         experience_id INTEGER NOT NULL REFERENCES experiences(id) ON DELETE CASCADE,
         category_id INTEGER NOT NULL REFERENCES categories(id),
@@ -62,8 +72,8 @@ async function migrate() {
       ALTER TABLE experiences
         ADD COLUMN IF NOT EXISTS host_id INTEGER REFERENCES hosts(id),
         ADD COLUMN IF NOT EXISTS location_id INTEGER REFERENCES locations(id);
-      INSERT INTO hosts (name)
-        SELECT DISTINCT host_name FROM experiences WHERE host_name IS NOT NULL
+      INSERT INTO hosts (name, slug)
+        SELECT DISTINCT host_name, 'host-' || md5(host_name) FROM experiences WHERE host_name IS NOT NULL
         ON CONFLICT (name) DO NOTHING;
       INSERT INTO locations (name, city, country)
         SELECT DISTINCT location, city, country FROM experiences
@@ -74,8 +84,9 @@ async function migrate() {
       UPDATE experiences e SET location_id = l.id FROM locations l
         WHERE e.location_id IS NULL AND e.location = l.name
           AND e.city = l.city AND e.country = l.country;
-      INSERT INTO categories (name) VALUES
-        ('Torneos'), ('Realidad Virtual'), ('Simuladores'), ('Gaming'), ('Escape Rooms')
+      INSERT INTO categories (name, slug) VALUES
+        ('Torneos', 'torneos'), ('Realidad Virtual', 'realidad-virtual'),
+        ('Simuladores', 'simuladores'), ('Gaming', 'gaming'), ('Escape Rooms', 'escape-rooms')
         ON CONFLICT (name) DO NOTHING;
       INSERT INTO experience_categories (experience_id, category_id)
         SELECT e.id, c.id FROM experiences e JOIN categories c ON c.name =
@@ -166,8 +177,134 @@ async function migrate() {
       END;
       $$;
     `);
+    for (const table of ['categories', 'hosts']) {
+      await client.query(`ALTER TABLE ${table}
+        ADD COLUMN IF NOT EXISTS slug VARCHAR(180),
+        ADD COLUMN IF NOT EXISTS description TEXT,
+        ADD COLUMN IF NOT EXISTS image_url TEXT,
+        ADD COLUMN IF NOT EXISTS status VARCHAR(30) NOT NULL DEFAULT 'published',
+        ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE,
+        ADD COLUMN IF NOT EXISTS created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP NULL`);
+      const existing = await client.query(`SELECT id, name, slug FROM ${table} ORDER BY id`);
+      const generatedHostSlug = (slug) => table === 'hosts' && /^host-[a-f0-9]{32}$/.test(slug || '');
+      const slugs = new Set(existing.rows.filter((row) => row.slug && !generatedHostSlug(row.slug)).map((row) => row.slug));
+      for (const row of existing.rows) {
+        if (row.slug && !generatedHostSlug(row.slug)) continue;
+        const base = generateSlug(row.name) || `${table}-${row.id}`;
+        let slug = base;
+        let suffix = 2;
+        while (slugs.has(slug)) slug = `${base}-${suffix++}`;
+        slugs.add(slug);
+        await client.query(`UPDATE ${table} SET slug = $1 WHERE id = $2`, [slug, row.id]);
+      }
+      await client.query(`ALTER TABLE ${table} ALTER COLUMN slug SET NOT NULL`);
+      await client.query(`CREATE UNIQUE INDEX IF NOT EXISTS ${table}_slug_unique ON ${table} (slug)`);
+      await client.query(`UPDATE ${table} entity SET image_url = image.url FROM images image
+        WHERE image.entity_type = $1 AND image.entity_id = entity.id
+          AND image.is_main = TRUE AND entity.image_url IS NULL`, [table]);
+    }
+    await client.query(`ALTER TABLE hosts
+      ADD COLUMN IF NOT EXISTS email VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS phone VARCHAR(30)`);
+    await client.query('CREATE UNIQUE INDEX IF NOT EXISTS hosts_email_unique ON hosts (email) WHERE email IS NOT NULL');
+    await client.query(`
+      CREATE OR REPLACE FUNCTION sync_catalog_image() RETURNS trigger AS $$
+      BEGIN
+        DELETE FROM images WHERE entity_type = TG_TABLE_NAME
+          AND entity_id = NEW.id AND is_main = TRUE;
+        IF NEW.image_url IS NOT NULL AND trim(NEW.image_url) <> '' THEN
+          INSERT INTO images (entity_type, entity_id, url, is_main, position)
+            VALUES (TG_TABLE_NAME, NEW.id, NEW.image_url, TRUE, 0)
+            ON CONFLICT (entity_type, entity_id, position)
+            DO UPDATE SET url = EXCLUDED.url, is_main = TRUE;
+        END IF;
+        RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql;
+      DROP TRIGGER IF EXISTS categories_sync_image ON categories;
+      CREATE TRIGGER categories_sync_image
+        AFTER INSERT OR UPDATE OF image_url ON categories
+        FOR EACH ROW EXECUTE FUNCTION sync_catalog_image();
+      DROP TRIGGER IF EXISTS hosts_sync_image ON hosts;
+      CREATE TRIGGER hosts_sync_image
+        AFTER INSERT OR UPDATE OF image_url ON hosts
+        FOR EACH ROW EXECUTE FUNCTION sync_catalog_image();
+    `);
+    await client.query(`CREATE TABLE IF NOT EXISTS roles (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(50) NOT NULL UNIQUE
+    )`);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        role_id INTEGER NOT NULL REFERENCES roles(id),
+        name VARCHAR(100) NOT NULL,
+        surname VARCHAR(100) NOT NULL,
+        email VARCHAR(255) NOT NULL UNIQUE,
+        password VARCHAR(255) NOT NULL,
+        phone VARCHAR(30),
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+      ALTER TABLE hosts ADD COLUMN IF NOT EXISTS user_id INTEGER UNIQUE REFERENCES users(id);
+      ALTER TABLE locations
+        ADD COLUMN IF NOT EXISTS address VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS postal_code VARCHAR(20);
+      ALTER TABLE experiences ADD COLUMN IF NOT EXISTS image_url TEXT;
+      UPDATE experiences SET image_url = cover_image WHERE image_url IS NULL;
+      ALTER TABLE experiences ALTER COLUMN host_id SET NOT NULL;
+      CREATE TABLE events (
+        id SERIAL PRIMARY KEY,
+        experience_id INTEGER NOT NULL REFERENCES experiences(id),
+        location_id INTEGER NOT NULL REFERENCES locations(id),
+        category_id INTEGER NOT NULL REFERENCES categories(id),
+        start_datetime TIMESTAMP,
+        end_datetime TIMESTAMP,
+        price DECIMAL(10,2) NOT NULL CHECK (price >= 0),
+        capacity INTEGER NOT NULL CHECK (capacity > 0),
+        status VARCHAR(30) NOT NULL DEFAULT 'draft',
+        image_url TEXT,
+        duration_minutes INTEGER CHECK (duration_minutes > 0),
+        legacy_experience_id INTEGER UNIQUE,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT events_dates_together CHECK ((start_datetime IS NULL) = (end_datetime IS NULL)),
+        CONSTRAINT events_end_after_start CHECK (end_datetime IS NULL OR end_datetime > start_datetime)
+      );
+      CREATE UNIQUE INDEX events_unique_schedule ON events (experience_id, location_id, start_datetime)
+        WHERE start_datetime IS NOT NULL;
+      INSERT INTO events (experience_id, location_id, category_id, price, capacity,
+        status, image_url, duration_minutes, legacy_experience_id, created_at, updated_at)
+      SELECT e.id, e.location_id,
+        (SELECT ec.category_id FROM experience_categories ec WHERE ec.experience_id = e.id ORDER BY ec.category_id LIMIT 1),
+        e.price, e.capacity, 'draft', e.cover_image, e.duration, e.id, e.created_at, e.updated_at
+      FROM experiences e
+      WHERE e.location_id IS NOT NULL
+        AND EXISTS (SELECT 1 FROM experience_categories ec WHERE ec.experience_id = e.id);
+      INSERT INTO images (entity_type, entity_id, url, is_main, position)
+      SELECT 'events', ev.id, i.url, i.is_main, i.position
+      FROM events ev JOIN images i ON i.entity_type = 'experiences'
+        AND i.entity_id = ev.legacy_experience_id
+      ON CONFLICT (entity_type, entity_id, position) DO NOTHING;
+      DROP TRIGGER IF EXISTS experiences_sync_images ON experiences;
+      ALTER TABLE experiences
+        DROP COLUMN price, DROP COLUMN duration, DROP COLUMN capacity,
+        DROP COLUMN location, DROP COLUMN country, DROP COLUMN city,
+        DROP COLUMN currency, DROP COLUMN cover_image, DROP COLUMN gallery,
+        DROP COLUMN host_name, DROP COLUMN location_id;
+      DROP FUNCTION IF EXISTS sync_experience_images();
+      DROP TRIGGER IF EXISTS experiences_sync_catalog_image ON experiences;
+      CREATE TRIGGER experiences_sync_catalog_image
+        AFTER INSERT OR UPDATE OF image_url ON experiences
+        FOR EACH ROW EXECUTE FUNCTION sync_catalog_image();
+      DROP TRIGGER IF EXISTS events_sync_image ON events;
+      CREATE TRIGGER events_sync_image
+        AFTER INSERT OR UPDATE OF image_url ON events
+        FOR EACH ROW EXECUTE FUNCTION sync_catalog_image();
+    `);
     await client.query('COMMIT');
-    console.log('Migración de experiences completada.');
+    console.log('Migración de experiences y events completada.');
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Error durante la migración:', error.message);

@@ -1,0 +1,35 @@
+<div class="admin-list-page mx-auto max-w-7xl px-6 py-8 sm:px-10 sm:py-10">
+  <header class="page-header">
+    <div><p class="eyebrow">GameHouse / Administración</p><h1>Lugares</h1><p class="page-description">Gestiona los lugares de las experiencias.</p></div>
+    <a routerLink="/lugares/nuevo" class="boton boton-primario"><svg lucidePlus [size]="18" aria-hidden="true"></svg> Nuevo lugar</a>
+  </header>
+  <section class="list-panel" aria-label="Lugares">
+    @if (store.cargando() && store.lugares().length === 0) {
+      <div class="list-feedback"><app-skeleton-loader /></div>
+    } @else if (store.error(); as mensaje) {
+      <div class="list-feedback"><app-mensaje-error [mensaje]="mensaje" (reintentar)="reintentar()" /></div>
+    } @else if (store.lugares().length === 0) {
+      <div class="list-feedback"><app-empty-state title="Aún no hay lugares" description="Utiliza el botón de crear para añadir el primer registro." /></div>
+    } @else {
+      <div class="table-scroll"><table>
+        <thead><tr><th scope="col">Lugar</th><th scope="col">Ciudad</th><th scope="col">País</th><th scope="col" class="actions-heading">Acciones</th></tr></thead>
+        <tbody>
+          @for (row of visibles(); track row.id) {
+            <tr><td class="experience-cell"><a class="experience-name" [routerLink]="['/lugares', row.id]">{{ row.name }}</a></td>
+              <td>{{ row.city }}</td><td>{{ row.country }}</td>
+              <td><div class="row-actions">
+                <a [routerLink]="['/lugares', row.id]" aria-label="Ver lugar"><svg lucideEye [size]="17" aria-hidden="true"></svg><span>Ver</span></a>
+                <a [routerLink]="['/lugares', row.id, 'editar']" aria-label="Editar lugar"><svg lucidePencil [size]="16" aria-hidden="true"></svg><span>Editar</span></a>
+              </div></td>
+            </tr>
+          }
+        </tbody>
+      </table></div>
+      <footer class="table-footer">
+        <label>Filas por página: <select [value]="filasPorPagina()" (change)="cambiarFilas($any($event.target).value)"><option value="all">Todos</option><option value="10">10</option><option value="25">25</option><option value="50">50</option></select></label>
+        <span>{{ desde() }}–{{ hasta() }} de {{ store.lugares().length }}</span>
+        <div class="pager"><button type="button" aria-label="Página anterior" [disabled]="paginaActual() === 1" (click)="pagina.set(paginaActual() - 1)">‹</button><span>Página {{ paginaActual() }} de {{ totalPaginas() }}</span><button type="button" aria-label="Página siguiente" [disabled]="paginaActual() === totalPaginas()" (click)="pagina.set(paginaActual() + 1)">›</button></div>
+      </footer>
+    }
+  </section>
+</div>

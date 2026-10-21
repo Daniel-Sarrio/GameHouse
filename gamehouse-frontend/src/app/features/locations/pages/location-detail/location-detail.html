@@ -1,0 +1,29 @@
+<div class="contenedor detalle">
+  <a routerLink="/lugares" class="volver">← Volver a lugares</a>
+  @if (store.cargandoDetalle()) {
+    <app-estado-carga texto="Cargando lugar…" />
+  } @else if (store.errorDetalle(); as mensaje) {
+    <app-mensaje-error [mensaje]="mensaje" (reintentar)="reintentar()" />
+  } @else if (store.lugarActual(); as actual) {
+    <article class="ficha">
+      <div class="cabecera" [style.background-image]="actual.imageUrl ? 'linear-gradient(90deg, rgba(16,32,101,.92), rgba(48,72,198,.55)), url(' + actual.imageUrl + ')' : null">
+        <p>GAMEHOUSE / LUGARES</p><h1>{{ actual.name }}</h1>
+      </div>
+      <div class="contenido"><dl class="datos">
+        <div><dt>ID</dt><dd>{{ actual.id }}</dd></div><div><dt>Dirección</dt><dd>{{ actual.address || 'Sin especificar' }}</dd></div><div><dt>Ciudad</dt><dd>{{ actual.city }}</dd></div><div><dt>Código postal</dt><dd>{{ actual.postalCode || 'Sin especificar' }}</dd></div><div><dt>País</dt><dd>{{ actual.country }}</dd></div>
+      </dl></div>
+    </article>
+    @if (store.errorAccion(); as mensaje) { <div class="alerta" role="alert">{{ mensaje }}</div> }
+    <div class="acciones">
+      <a class="boton boton-primario" [routerLink]="['/lugares', actual.id, 'editar']">Editar lugar</a>
+      @if (!confirmandoBorrado()) {
+        <button type="button" class="boton boton-peligro" (click)="confirmandoBorrado.set(true)">Eliminar</button>
+      } @else {
+        <span class="confirmar">¿Eliminar este lugar?
+          <button type="button" class="boton boton-peligro" [disabled]="store.guardando()" (click)="eliminar()">Sí, eliminar</button>
+          <button type="button" class="boton boton-secundario" (click)="confirmandoBorrado.set(false)">Cancelar</button>
+        </span>
+      }
+    </div>
+  }
+</div>

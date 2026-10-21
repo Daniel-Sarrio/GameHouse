@@ -1,0 +1,15 @@
+<div class="contenedor pagina">
+  <a routerLink="/roles" class="volver">← Volver a roles</a>
+  <p class="eyebrow">GAMEHOUSE / {{ editando() ? 'EDITAR' : 'CREAR' }}</p>
+  <h1>{{ editando() ? 'Editar rol' : 'Nuevo rol' }}</h1>
+  <p class="subtitulo">Indica el nombre del rol.</p>
+  @if (!editando()) {
+    <app-role-form [guardando]="store.guardando()" [errorServidor]="store.errorAccion()" (guardar)="onGuardar($event)" (cancelar)="onCancelar()" />
+  } @else if (store.cargandoDetalle()) {
+    <app-estado-carga texto="Cargando rol…" />
+  } @else if (store.errorDetalle(); as mensaje) {
+    <app-mensaje-error [mensaje]="mensaje" (reintentar)="reintentar()" />
+  } @else if (store.rolActual(); as rol) {
+    <app-role-form [rol]="rol" [guardando]="store.guardando()" [errorServidor]="store.errorAccion()" (guardar)="onGuardar($event)" (cancelar)="onCancelar()" />
+  }
+</div>

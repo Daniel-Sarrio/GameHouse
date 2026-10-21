@@ -1,0 +1,31 @@
+<form class="formulario" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+  @if (errorServidor(); as mensaje) { <div class="alerta" role="alert">{{ mensaje }}</div> }
+  <h2>Categoría de la experiencia</h2>
+  @if (cargando()) {
+    <app-estado-carga texto="Cargando experiencias y categorías…" />
+  } @else if (errorOpciones(); as mensaje) {
+    <app-mensaje-error [mensaje]="mensaje" (reintentar)="cargarOpciones()" />
+  } @else {
+    <label class="campo">Experiencia
+      <select formControlName="experienceId">
+        <option [ngValue]="0" disabled>Selecciona una experiencia</option>
+        @for (experiencia of experiencias(); track experiencia.id) { <option [ngValue]="experiencia.id">{{ experiencia.name }}</option> }
+      </select>
+      @if (error('experienceId'); as mensaje) { <small class="field-error">{{ mensaje }}</small> }
+    </label>
+    <label class="campo">Categoría
+      <select formControlName="categoryId">
+        <option [ngValue]="0" disabled>Selecciona una categoría</option>
+        @for (categoria of categorias(); track categoria.id) { <option [ngValue]="categoria.id">{{ categoria.name }}</option> }
+      </select>
+      @if (error('categoryId'); as mensaje) { <small class="field-error">{{ mensaje }}</small> }
+    </label>
+    @if (experiencias().length === 0 || categorias().length === 0) {
+      <p class="alerta">Necesitas crear al menos una experiencia y una categoría antes de asignarlas.</p>
+    }
+  }
+  <div class="acciones">
+    <button type="submit" class="boton boton-primario" [disabled]="guardando() || cargando() || !!errorOpciones() || experiencias().length === 0 || categorias().length === 0">{{ guardando() ? 'Guardando…' : asignacion() ? 'Guardar cambios' : 'Crear asignación' }}</button>
+    <button type="button" class="boton boton-secundario" (click)="cancelar.emit()">Cancelar</button>
+  </div>
+</form>

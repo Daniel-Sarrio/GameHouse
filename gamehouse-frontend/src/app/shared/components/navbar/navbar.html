@@ -6,13 +6,28 @@
 
   <nav class="flex flex-1 flex-col gap-1 px-3 py-5" aria-label="Navegación de administración">
     <p class="px-3 pb-2 text-[11px] font-bold tracking-[.16em] text-slate-400 uppercase">Gestión</p>
-    <a routerLink="/eventos" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-600">
+    <a routerLink="/experiencias" routerLinkActive="active" class="nav-link flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-600">
       <svg lucideLayers [size]="19" aria-hidden="true"></svg> Experiencias
+    </a>
+    <a routerLink="/eventos" routerLinkActive="active" class="nav-link flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-600">
+      <svg lucideCalendarDays [size]="19" aria-hidden="true"></svg> Eventos
+    </a>
+    <a routerLink="/categorias" routerLinkActive="active" class="nav-link flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-600">
+      <svg lucideTags [size]="19" aria-hidden="true"></svg> Categorías
+    </a>
+    <a routerLink="/organizadores" routerLinkActive="active" class="nav-link flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-600">
+      <svg lucideUsers [size]="19" aria-hidden="true"></svg> Organizadores
+    </a>
+    <a routerLink="/lugares" routerLinkActive="active" class="nav-link flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-600">
+      <svg lucideMapPin [size]="19" aria-hidden="true"></svg> Lugares
+    </a>
+    <a routerLink="/roles" routerLinkActive="active" class="nav-link flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-600">
+      <svg lucideShield [size]="19" aria-hidden="true"></svg> Roles
     </a>
   </nav>
 
   <div class="mx-4 mb-6 hidden rounded-2xl border border-indigo-100 bg-indigo-50 p-4 lg:block">
-    <p class="text-sm font-bold text-indigo-950">Panel de experiencias</p>
-    <p class="mt-1 text-xs leading-5 text-indigo-700">Gestiona el catálogo, los estados y la disponibilidad desde un solo lugar.</p>
+    <p class="text-sm font-bold text-indigo-950">Panel de gestión</p>
+    <p class="mt-1 text-xs leading-5 text-indigo-700">Gestiona experiencias, eventos, categorías, organizadores, lugares y roles desde un solo lugar.</p>
   </div>
 </aside>

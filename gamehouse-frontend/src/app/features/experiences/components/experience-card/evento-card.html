@@ -1,27 +1,14 @@
 <article class="admin-card" [class.inactiva]="!evento().isActive">
-  <div class="cover">
-    <img [src]="evento().coverImage" [alt]="'Portada de ' + evento().name" loading="lazy" />
-    <span class="status" [class.status-off]="!evento().isActive">{{ evento().isActive ? 'ACTIVA' : 'INACTIVA' }}</span>
-    @if (!evento().isActive) { <div class="cover-shade" aria-hidden="true"></div> }
-  </div>
+  @if (evento().imageUrl) { <div class="cover"><img [src]="evento().imageUrl" [alt]="'Imagen de ' + evento().name" loading="lazy" /></div> }
   <div class="flex flex-1 flex-col p-5">
-    <div class="mb-2 flex items-center justify-between gap-2 text-xs font-semibold text-slate-500">
-      <span class="inline-flex items-center gap-1"><svg lucideMapPin [size]="14" aria-hidden="true"></svg>{{ evento().city }}, {{ evento().country }}</span>
-      <span>#{{ evento().id }}</span>
-    </div>
+    <span>#{{ evento().id }}</span>
     <h3 class="text-lg font-bold leading-snug text-slate-900">{{ evento().name }}</h3>
-    <p class="mt-2 line-clamp-2 min-h-10 text-sm leading-5 text-slate-500">{{ evento().description || 'Sin descripción' }}</p>
-    @if (!evento().isActive) { <p class="inactive-note mt-3">Esta experiencia no está activa</p> }
-    <div class="mt-auto flex items-center justify-between gap-2 border-b border-slate-100 py-4 text-sm">
-      <strong class="text-slate-900">{{ precio() }}</strong>
-      <span class="text-slate-500">{{ evento().duration }} min · {{ evento().capacity }} plazas</span>
-    </div>
+    <p class="mt-2 text-sm text-slate-500">{{ evento().description || 'Sin descripción' }}</p>
+    <p class="mt-2 text-sm text-slate-500">{{ evento().hostName }} · {{ evento().eventCount }} eventos</p>
     <div class="mt-4 flex flex-wrap items-center gap-2">
-      <a class="card-action" [routerLink]="['/eventos', evento().slug]"><svg lucideEye [size]="16" aria-hidden="true"></svg> Ver</a>
-      <a class="card-action" [routerLink]="['/eventos', evento().slug, 'editar']"><svg lucidePencil [size]="16" aria-hidden="true"></svg> Editar</a>
-      <button type="button" class="card-action card-toggle" [class.activate]="!evento().isActive" [disabled]="store.guardando()" (click)="cambiarEstado()">
-        <svg lucidePower [size]="16" aria-hidden="true"></svg> {{ evento().isActive ? 'Desactivar' : 'Activar' }}
-      </button>
+      <a class="card-action" [routerLink]="['/experiencias', evento().slug]"><svg lucideEye [size]="16" aria-hidden="true"></svg> Ver</a>
+      <a class="card-action" [routerLink]="['/experiencias', evento().id, 'editar']"><svg lucidePencil [size]="16" aria-hidden="true"></svg> Editar</a>
+      <button type="button" class="card-action card-toggle" [disabled]="store.guardando()" (click)="cambiarEstado()"><svg lucidePower [size]="16" aria-hidden="true"></svg> {{ evento().isActive ? 'Desactivar' : 'Activar' }}</button>
     </div>
   </div>
 </article>

@@ -1,0 +1,40 @@
+<div class="contenedor detalle">
+  <a routerLink="/organizadores" class="volver">← Volver a todos los organizadores</a>
+  @if (store.cargandoDetalle()) {
+    <app-estado-carga texto="Cargando organizador…" />
+  } @else if (store.errorDetalle(); as mensaje) {
+    <app-mensaje-error [mensaje]="mensaje" (reintentar)="reintentar()" />
+  } @else if (vista(); as v) {
+    @if (!v.organizador.isActive) {
+      <div class="inactive-banner" role="status"><strong>ORGANIZADOR INACTIVO</strong><span>No está disponible en la plataforma. Puedes activarlo desde las acciones de esta página.</span></div>
+    }
+    <article class="ficha" [class.ficha-inactiva]="!v.organizador.isActive">
+      <div class="cabecera" [style.background-image]="v.organizador.imageUrl ? 'linear-gradient(90deg, rgba(16,32,101,.92), rgba(48,72,198,.55)), url(' + v.organizador.imageUrl + ')' : null">
+        <p>GAMEHOUSE / {{ v.organizador.slug }}</p><h1>{{ v.organizador.name }}</h1>
+      </div>
+      <div class="contenido">
+        <p class="descripcion">{{ v.organizador.description || 'Este organizador todavía no tiene descripción.' }}</p>
+        <dl class="datos">
+          <div><dt>ID</dt><dd>{{ v.organizador.id }}</dd></div>
+          <div><dt>Correo</dt><dd>{{ v.organizador.email || 'Sin correo' }}</dd></div>
+          <div><dt>Teléfono</dt><dd>{{ v.organizador.phone || 'Sin teléfono' }}</dd></div>
+          <div><dt>Estado</dt><dd>{{ v.estado }}</dd></div>
+          <div><dt>Visibilidad</dt><dd><span class="status-pill" [class.status-off]="!v.organizador.isActive">{{ v.organizador.isActive ? 'Activo' : 'Inactivo' }}</span></dd></div>
+        </dl>
+      </div>
+    </article>
+    @if (store.errorAccion(); as mensaje) { <div class="alerta" role="alert">{{ mensaje }}</div> }
+    <div class="acciones">
+      <a class="boton boton-primario" [routerLink]="['/organizadores', v.organizador.slug, 'editar']">Editar organizador</a>
+      <button type="button" class="boton boton-secundario" [disabled]="store.guardando()" (click)="cambiarEstado()">{{ v.organizador.isActive ? 'Desactivar' : 'Activar' }}</button>
+      @if (!confirmandoBorrado()) {
+        <button type="button" class="boton boton-peligro" (click)="confirmandoBorrado.set(true)">Eliminar</button>
+      } @else {
+        <span class="confirmar">¿Enviar este organizador a eliminados?
+          <button type="button" class="boton boton-peligro" [disabled]="store.guardando()" (click)="eliminar()">Sí, eliminar</button>
+          <button type="button" class="boton boton-secundario" (click)="confirmandoBorrado.set(false)">Cancelar</button>
+        </span>
+      }
+    </div>
+  }
+</div>

@@ -4,8 +4,8 @@ import { EventoFormPage } from '../../components/experience-form-page/evento-for
 @Component({
   selector: 'app-experience-edit',
   imports: [EventoFormPage],
-  template: '<app-evento-form-page [slug]="slug()" />',
+  template: '<app-evento-form-page [id]="id()" />',
 })
 export class ExperienceEdit {
-  readonly slug = input.required<string>();
+  readonly id = input.required<string>();
 }

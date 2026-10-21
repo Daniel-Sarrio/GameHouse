@@ -1,6 +1,6 @@
 # GameHouse Backend
 
-API REST de experiencias gaming con Node.js, Express y PostgreSQL.
+API REST de GameHouse con Node.js, Express y PostgreSQL.
 
 ## Arquitectura
 
@@ -9,15 +9,6 @@ route → ctrl → service → repo → PostgreSQL
                               ↓
                             model
 ```
-
-- `routes`: URLs y middlewares de validación con Zod.
-- `ctrls`: entrada y respuesta HTTP.
-- `services`: reglas de negocio, slugs y errores controlados.
-- `repos`: consultas SQL mediante `pg`.
-- `models`: forma de los datos devueltos.
-- `middleware`: validación, errores y rutas no encontradas.
-
-Helmet añade cabeceras de seguridad y Morgan muestra cada petición en la terminal.
 
 ## Preparación
 
@@ -29,12 +20,33 @@ npm run seed
 npm run dev
 ```
 
-También puedes ejecutar `npm run seed` desde la raíz del proyecto. El comando aplica la migración y carga cuatro organizadores, cinco lugares, cinco categorías y ocho experiencias de prueba. Se puede repetir: los eventos que ya tengan el mismo slug se conservan sin duplicarse.
+`npm seed` desde la raíz también aplica la migración y carga los datos de prueba. Migración y seed se pueden ejecutar varias veces sin duplicar eventos programados.
 
-La tabla `images` permite asociar imágenes a cualquier registro mediante `entity_type` (nombre de la tabla, por ejemplo `experiences`, `hosts`, `locations` o `categories`) y `entity_id`. Tiene una imagen principal como máximo por registro. La migración copia las portadas y galerías existentes y mantiene sincronizadas las imágenes de las experiencias al crearlas o editarlas.
-`locations.image_url` guarda además la imagen principal del lugar; la migración la rellena con las imágenes existentes y la mantiene sincronizada con `images`.
+## Modelo de datos
 
-`npm run migrate` amplía la tabla existente sin borrar sus registros, genera slugs y crea los catálogos de organizadores, lugares y categorías. Conserva las experiencias existentes y les asigna sus relaciones. `npm run seed` añade tres experiencias de ejemplo con slugs definidos en `seed.js`; si alguno ya existe, el servicio añade un sufijo para mantenerlo único.
+- `experiences` es el catálogo reutilizable: nombre, descripción, imagen, organizador, categorías y estado. El slug se genera a partir del nombre.
+- `events` es cada celebración concreta: experiencia, lugar, categoría, inicio, fin, precio, capacidad, imagen y estado. Una experiencia puede tener varios eventos con precios, lugares y fechas diferentes.
+- `experience_categories` relaciona las categorías permitidas para cada experiencia. Al crear un evento, su categoría debe pertenecer a esa experiencia.
+- `locations` guarda nombre, dirección, ciudad, código postal, país e imagen. Dirección y código postal pueden ser nulos en los registros anteriores a la migración.
+- `hosts`, `categories`, `roles` y `users` son los demás catálogos. `hosts.user_id` puede ser nulo en organizadores anteriores a la migración.
+- `images` permite asociar imágenes a cualquier tabla mediante `entity_type` y `entity_id`.
+
+La migración convierte los registros antiguos con lugar y precio en eventos borrador. Como no existían fechas en esos registros, `start_datetime` y `end_datetime` quedan nulos hasta que se programen. `duration_minutes` conserva su duración anterior. El seed crea eventos programados de ejemplo; incluye dos celebraciones del mismo torneo FC27 con diferentes precios y capacidades.
+
+`database.sql` define el esquema para una base nueva. `migrate.js` adapta una base existente y conserva sus registros.
+
+## Endpoints
+
+| Recurso | Rutas principales |
+| --- | --- |
+| Experiencias | `GET /api/experiences`, `GET /api/experiences/:id`, `GET /api/experiences/slug/:slug`, `GET /api/experiences/form-options`, `POST /api/experiences`, `PATCH /api/experiences/:id`, `DELETE /api/experiences/:id` |
+| Eventos | `GET /api/events`, `GET /api/events/:id`, `GET /api/events/form-options`, `POST /api/events`, `PATCH /api/events/:id`, `DELETE /api/events/:id` |
+| Lugares | `GET /api/locations`, `GET /api/locations/:id`, `POST /api/locations`, `PATCH /api/locations/:id`, `DELETE /api/locations/:id` |
+| Categorías | `/api/categories` |
+| Organizadores | `/api/hosts` |
+| Roles | `/api/roles` |
+
+Las respuestas correctas usan `{ "success": true, "data": ... }`. Los errores usan `{ "success": false, "message": "...", "errors": [] }`.
 
 Configura `.env` a partir de `.env.example`:
 
@@ -46,25 +58,3 @@ DB_NAME=GameHome
 DB_USER=postgres
 DB_PASSWORD=tu_contrasena
 ```
-
-## Campos de una experiencia
-
-Además de `id`, cada experiencia contiene `name`, `slug`, `description`, `location`, `country`, `city`, `price`, `currency`, `duration`, `capacity`, `coverImage`, `gallery`, `hostName`, `hostId`, `locationId`, `categoryIds`, `status`, `isActive`, `createdAt`, `updatedAt` y `deletedAt`.
-
-El slug se genera automáticamente desde `name` y se hace único. El cliente no debe enviarlo. DELETE es un borrado lógico: rellena `deletedAt`, desactiva el evento y deja de mostrarlo en las consultas normales.
-
-## Endpoints
-
-| Método | Ruta | Función |
-| --- | --- | --- |
-| GET | `/api/experiences` | Listar las no eliminadas |
-| GET | `/api/experiences/form-options` | Listar organizadores, lugares y categorías |
-| GET | `/api/experiences/:id` | Consultar por ID |
-| GET | `/api/experiences/slug/:slug` | Consultar por slug |
-| POST | `/api/experiences` | Crear |
-| PATCH | `/api/experiences/:id` | Actualizar campos enviados |
-| PATCH | `/api/experiences/:id/activate` | Activar |
-| PATCH | `/api/experiences/:id/deactivate` | Desactivar |
-| DELETE | `/api/experiences/:id` | Borrado lógico |
-
-Las respuestas correctas usan `{ "success": true, "data": ... }`. Los errores usan `{ "success": false, "message": "...", "errors": [] }`. Consulta ejemplos completos en `POSTMAN.md`.

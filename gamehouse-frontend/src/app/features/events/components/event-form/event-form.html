@@ -1,0 +1,45 @@
+<form class="formulario" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+  @if (errorServidor(); as mensaje) { <div class="alerta" role="alert">{{ mensaje }}</div> }
+  @if (errorFormulario(); as mensaje) { <div class="alerta" role="alert">{{ mensaje }}</div> }
+  <h2>Datos del evento</h2>
+  @if (cargando()) { <app-estado-carga texto="Cargando opciones…" /> }
+  @else if (errorOpciones(); as mensaje) { <app-mensaje-error [mensaje]="mensaje" (reintentar)="cargarOpciones()" /> }
+  @else {
+    <div class="fila">
+      <label class="campo">Experiencia
+        <select formControlName="experienceId" (change)="cambiarExperiencia()"><option [ngValue]="0">Selecciona una experiencia</option>
+          @for (item of opciones().experiences; track item.id) { <option [ngValue]="item.id">{{ item.name }}</option> }
+        </select>
+        @if (error('experienceId'); as mensaje) { <small class="field-error">{{ mensaje }}</small> }
+      </label>
+      <label class="campo">Categoría
+        <select formControlName="categoryId"><option [ngValue]="0">Selecciona una categoría</option>
+          @for (item of categoriasDisponibles(); track item.id) { <option [ngValue]="item.id">{{ item.name }}</option> }
+        </select>
+        @if (error('categoryId'); as mensaje) { <small class="field-error">{{ mensaje }}</small> }
+      </label>
+    </div>
+    <label class="campo">Lugar
+      <select formControlName="locationId"><option [ngValue]="0">Selecciona un lugar</option>
+        @for (item of opciones().locations; track item.id) { <option [ngValue]="item.id">{{ item.name }} ({{ item.city }})</option> }
+      </select>
+      @if (error('locationId'); as mensaje) { <small class="field-error">{{ mensaje }}</small> }
+    </label>
+    <div class="fila">
+      <label class="campo">Inicio <input formControlName="startDatetime" type="datetime-local" /></label>
+      <label class="campo">Fin <input formControlName="endDatetime" type="datetime-local" /></label>
+    </div>
+    <div class="fila">
+      <label class="campo">Precio (€) <input formControlName="price" type="number" min="0" step="0.01" /> @if (error('price'); as mensaje) { <small class="field-error">{{ mensaje }}</small> }</label>
+      <label class="campo">Capacidad <input formControlName="capacity" type="number" min="1" step="1" /> @if (error('capacity'); as mensaje) { <small class="field-error">{{ mensaje }}</small> }</label>
+      <label class="campo">Estado
+        <select formControlName="status"><option value="draft">Borrador</option><option value="scheduled">Programado</option><option value="cancelled">Cancelado</option><option value="completed">Finalizado</option></select>
+      </label>
+    </div>
+    <label class="campo">URL de imagen <input formControlName="imageUrl" type="url" placeholder="https://..." /> @if (error('imageUrl'); as mensaje) { <small class="field-error">{{ mensaje }}</small> }</label>
+  }
+  <div class="acciones">
+    <button type="submit" class="boton boton-primario" [disabled]="guardando() || cargando() || !!errorOpciones()">{{ guardando() ? 'Guardando…' : celebracion() ? 'Guardar cambios' : 'Crear evento' }}</button>
+    <button type="button" class="boton boton-secundario" (click)="cancelar.emit()">Cancelar</button>
+  </div>
+</form>
