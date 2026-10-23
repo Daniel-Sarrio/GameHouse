@@ -2,20 +2,47 @@ require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 
 const pool = require('./src/config/database');
 const generateSlug = require('./src/services/utils/slug');
+const generateSku = require('./src/services/utils/sku');
+
+async function migrateEventSkus(client) {
+  await client.query('ALTER TABLE events ADD COLUMN IF NOT EXISTS sku VARCHAR(180)');
+  const { rows } = await client.query(`SELECT ev.id, ev.sku, e.name
+    FROM events ev JOIN experiences e ON e.id = ev.experience_id ORDER BY ev.id`);
+  const used = new Set(rows.filter((row) => row.sku).map((row) => row.sku));
+  // Se rellenan los eventos anteriores antes de exigir NOT NULL y UNIQUE.
+  for (const row of rows) {
+    if (row.sku) continue;
+    const base = generateSku(row.name) || 'EVENTO';
+    let sku = base;
+    let suffix = 2;
+    while (used.has(sku)) {
+      const ending = `-${suffix++}`;
+      sku = `${base.slice(0, 180 - ending.length)}${ending}`;
+    }
+    used.add(sku);
+    await client.query('UPDATE events SET sku = $1 WHERE id = $2', [sku, row.id]);
+  }
+  await client.query('ALTER TABLE events ALTER COLUMN sku SET NOT NULL');
+  const constraint = await client.query(`SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'events'::regclass AND conname = 'events_sku_key'`);
+  if (!constraint.rowCount) await client.query('ALTER TABLE events ADD CONSTRAINT events_sku_key UNIQUE (sku)');
+}
 
 async function migrate() {
   const client = await pool.connect();
 
   try {
+    await client.query('BEGIN');
     const currentSchema = await client.query(`SELECT EXISTS (
       SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'events'
     ) AS has_events`);
     if (currentSchema.rows[0].has_events) {
       await client.query('ALTER TABLE experiences ALTER COLUMN host_id SET NOT NULL');
-      console.log('Migración de experiences y events ya aplicada.');
+      await migrateEventSkus(client);
+      await client.query('COMMIT');
+      console.log('Migración aplicada: events.sku VARCHAR(180) NOT NULL UNIQUE.');
       return;
     }
-    await client.query('BEGIN');
     await client.query(`
       ALTER TABLE experiences
         ADD COLUMN IF NOT EXISTS slug VARCHAR(180),
@@ -303,6 +330,7 @@ async function migrate() {
         AFTER INSERT OR UPDATE OF image_url ON events
         FOR EACH ROW EXECUTE FUNCTION sync_catalog_image();
     `);
+    await migrateEventSkus(client);
     await client.query('COMMIT');
     console.log('Migración de experiences y events completada.');
   } catch (error) {

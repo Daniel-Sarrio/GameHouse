@@ -1,9 +1,8 @@
 <form class="formulario" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
   @if (errorServidor(); as mensaje) { <div class="alerta" role="alert">{{ mensaje }}</div> }
-  @if (errorFormulario(); as mensaje) { <div class="alerta" role="alert">{{ mensaje }}</div> }
   <h2>Datos del evento</h2>
   @if (cargando()) { <app-estado-carga texto="Cargando opciones…" /> }
-  @else if (errorOpciones(); as mensaje) { <app-mensaje-error [mensaje]="mensaje" (reintentar)="cargarOpciones()" /> }
+  @else if (errorOpciones(); as mensaje) { <app-mensaje-error [mensaje]="mensaje" (reintentar)="reintentarOpciones.emit()" /> }
   @else {
     <div class="fila">
       <label class="campo">Experiencia

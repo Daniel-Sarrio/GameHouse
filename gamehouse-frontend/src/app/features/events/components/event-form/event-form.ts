@@ -1,7 +1,6 @@
-import { Component, OnInit, inject, input, output, signal } from '@angular/core';
+import { Component, OnInit, inject, input, output } from '@angular/core';
 import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
-import { Celebracion, DatosCelebracion } from '../../../../core/models/event.model';
-import { CelebracionesService, OpcionesCelebracion } from '../../../../core/services/event.service';
+import { Celebracion, DatosCelebracion, OpcionesCelebracion } from '../../../../core/models/event.model';
 import { EstadoCarga } from '../../../../shared/components/loader/estado-carga';
 import { MensajeError } from '../../../../shared/components/error-state/mensaje-error';
 
@@ -24,16 +23,15 @@ const fechaLocal = (value: string | null): string => {
 })
 export class EventForm implements OnInit {
   private readonly fb = inject(NonNullableFormBuilder);
-  private readonly service = inject(CelebracionesService);
   readonly celebracion = input<Celebracion | null>(null);
   readonly guardando = input(false);
   readonly errorServidor = input<string | null>(null);
   readonly guardar = output<DatosCelebracion>();
   readonly cancelar = output<void>();
-  readonly opciones = signal<OpcionesCelebracion>({ experiences: [], locations: [], categories: [] });
-  readonly cargando = signal(false);
-  readonly errorOpciones = signal<string | null>(null);
-  readonly errorFormulario = signal<string | null>(null);
+  readonly reintentarOpciones = output<void>();
+  readonly opciones = input<OpcionesCelebracion>({ experiences: [], locations: [], categories: [] });
+  readonly cargando = input(false);
+  readonly errorOpciones = input<string | null>(null);
   readonly form = this.fb.group({
     experienceId: this.fb.control(0, [Validators.min(1)]),
     locationId: this.fb.control(0, [Validators.min(1)]),
@@ -56,16 +54,8 @@ export class EventForm implements OnInit {
       endDatetime: fechaLocal(event.endDatetime),
       price: event.price, capacity: event.capacity, status: event.status, imageUrl: event.imageUrl ?? '',
     });
-    void this.cargarOpciones();
   }
-  async cargarOpciones(): Promise<void> {
-    this.cargando.set(true);
-    this.errorOpciones.set(null);
-    try { this.opciones.set(await this.service.obtenerOpcionesFormulario()); }
-    catch (error) { this.errorOpciones.set((error as Error).message); }
-    finally { this.cargando.set(false); }
-  }
-  cambiarExperiencia(): void { this.form.controls.categoryId.setValue(0); this.errorFormulario.set(null); }
+  cambiarExperiencia(): void { this.form.controls.categoryId.setValue(0); }
   error(field: keyof typeof this.form.controls): string | null {
     const control = this.form.controls[field];
     if (!control.invalid || !(control.dirty || control.touched)) return null;
@@ -75,16 +65,7 @@ export class EventForm implements OnInit {
   onSubmit(): void {
     if (this.guardando() || this.cargando() || this.errorOpciones()) return;
     const value = this.form.getRawValue();
-    if (this.form.invalid || !this.opciones().categories.some((item) =>
-      item.experienceId === value.experienceId && item.id === value.categoryId)
-      || (!!value.startDatetime !== !!value.endDatetime)
-      || (value.status === 'scheduled' && !value.startDatetime)
-      || (value.startDatetime && value.endDatetime && value.endDatetime <= value.startDatetime)) {
-      this.form.markAllAsTouched();
-      this.errorFormulario.set('Revisa la experiencia, la categoría y las fechas del evento.');
-      return;
-    }
-    this.errorFormulario.set(null);
+    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     this.guardar.emit({ ...value, startDatetime: value.startDatetime || null,
       endDatetime: value.endDatetime || null, imageUrl: value.imageUrl.trim() || null });
   }

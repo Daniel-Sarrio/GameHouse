@@ -4,7 +4,7 @@
   @if (cargando()) {
     <app-estado-carga texto="Cargando experiencias y categorías…" />
   } @else if (errorOpciones(); as mensaje) {
-    <app-mensaje-error [mensaje]="mensaje" (reintentar)="cargarOpciones()" />
+    <app-mensaje-error [mensaje]="mensaje" (reintentar)="reintentarOpciones.emit()" />
   } @else {
     <label class="campo">Experiencia
       <select formControlName="experienceId">

@@ -1,5 +1,6 @@
 export interface Celebracion {
   id: number;
+  sku: string;
   experienceId: number;
   experienceName: string;
   experienceSlug: string;
@@ -23,3 +24,9 @@ export interface Celebracion {
 export type DatosCelebracion = Pick<Celebracion, 'experienceId' | 'locationId' | 'categoryId' |
   'startDatetime' | 'endDatetime' | 'price' | 'capacity' | 'status' | 'imageUrl'>;
 export type CambiosCelebracion = Partial<DatosCelebracion>;
+
+export interface OpcionesCelebracion {
+  experiences: { id: number; name: string }[];
+  locations: { id: number; name: string; city: string; country: string }[];
+  categories: { id: number; name: string; experienceId: number }[];
+}

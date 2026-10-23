@@ -1,6 +1,6 @@
 <form class="formulario" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
   @if (errorServidor(); as mensaje) { <div class="alerta" role="alert">{{ mensaje }}</div> }
-  @if (errorOpciones()) { <div class="alerta" role="alert">{{ errorOpciones() }} <button type="button" (click)="cargarOpciones()">Reintentar</button></div> }
+  @if (errorOpciones()) { <div class="alerta" role="alert">{{ errorOpciones() }} <button type="button" (click)="reintentarOpciones.emit()">Reintentar</button></div> }
   <h2>Datos de la experiencia</h2>
   <label class="campo">Nombre
     <input formControlName="name" type="text" maxlength="180" />
@@ -33,7 +33,7 @@
     @if (error('categoryIds'); as mensaje) { <small class="field-error">Selecciona al menos una categoría.</small> }
   </fieldset>
   <div class="acciones">
-    <button type="submit" class="boton boton-primario" [disabled]="guardando() || !!errorOpciones() || !opciones().hosts.length || !opciones().categories.length">{{ guardando() ? 'Guardando…' : evento() ? 'Guardar cambios' : 'Crear experiencia' }}</button>
+    <button type="submit" class="boton boton-primario" [disabled]="guardando() || cargando() || !!errorOpciones() || !opciones().hosts.length || !opciones().categories.length">{{ guardando() ? 'Guardando…' : evento() ? 'Guardar cambios' : 'Crear experiencia' }}</button>
     <button type="button" class="boton boton-secundario" (click)="cancelar.emit()">Cancelar</button>
   </div>
 </form>

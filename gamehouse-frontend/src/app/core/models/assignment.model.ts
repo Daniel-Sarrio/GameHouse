@@ -6,3 +6,8 @@ export interface Asignacion {
 }
 export type DatosAsignacion = Pick<Asignacion, 'experienceId' | 'categoryId'>;
 export type CambiosAsignacion = DatosAsignacion;
+
+export interface OpcionesAsignacion {
+  experiencias: { id: number; name: string }[];
+  categorias: { id: number; name: string }[];
+}

@@ -16,4 +16,6 @@ const updateEventSchema = z.strictObject(Object.fromEntries(
   Object.entries(fields).map(([key, schema]) => [key, schema.optional()]),
 )).refine((data) => Object.keys(data).length > 0, 'Debes enviar al menos un campo.');
 const idParamsSchema = z.object({ id: z.coerce.number().int().positive() });
-module.exports = { createEventSchema, updateEventSchema, idParamsSchema };
+// Igual que el slug: obligatorio, sin espacios en los extremos y hasta 180 caracteres.
+const skuParamsSchema = z.object({ sku: z.string().trim().min(1).max(180) });
+module.exports = { createEventSchema, updateEventSchema, idParamsSchema, skuParamsSchema };

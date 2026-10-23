@@ -4,12 +4,12 @@
   <h1>{{ editando() ? 'Editar organizador' : 'Nuevo organizador' }}</h1>
   <p class="subtitulo">{{ editando() ? 'Actualiza los datos de este organizador.' : 'Añade un organizador al catálogo.' }}</p>
   @if (!editando()) {
-    <app-organizer-form [guardando]="store.guardando()" [errorServidor]="store.errorAccion()" (guardar)="onGuardar($event)" (cancelar)="onCancelar()" />
-  } @else if (store.cargandoDetalle()) {
+    <app-organizer-form [guardando]="guardando()" [errorServidor]="errorServidor()" (guardar)="guardar.emit($event)" (cancelar)="cancelar.emit()" />
+  } @else if (cargando()) {
     <app-estado-carga texto="Cargando organizador…" />
-  } @else if (store.errorDetalle(); as mensaje) {
-    <app-mensaje-error [mensaje]="mensaje" (reintentar)="reintentar()" />
-  } @else if (store.organizadorActual(); as organizador) {
-    <app-organizer-form [organizador]="organizador" [guardando]="store.guardando()" [errorServidor]="store.errorAccion()" (guardar)="onGuardar($event)" (cancelar)="onCancelar()" />
+  } @else if (errorCarga(); as mensaje) {
+    <app-mensaje-error [mensaje]="mensaje" (reintentar)="reintentar.emit()" />
+  } @else if (organizador(); as organizador) {
+    <app-organizer-form [organizador]="organizador" [guardando]="guardando()" [errorServidor]="errorServidor()" (guardar)="guardar.emit($event)" (cancelar)="cancelar.emit()" />
   }
 </div>

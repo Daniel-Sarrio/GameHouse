@@ -4,12 +4,12 @@
   <h1>{{ editando() ? 'Editar lugar' : 'Nuevo lugar' }}</h1>
   <p class="subtitulo">Completa los datos de este lugar.</p>
   @if (!editando()) {
-    <app-location-form [guardando]="store.guardando()" [errorServidor]="store.errorAccion()" (guardar)="onGuardar($event)" (cancelar)="onCancelar()" />
-  } @else if (store.cargandoDetalle()) {
+    <app-location-form [guardando]="guardando()" [errorServidor]="errorServidor()" (guardar)="guardar.emit($event)" (cancelar)="cancelar.emit()" />
+  } @else if (cargando()) {
     <app-estado-carga texto="Cargando lugar…" />
-  } @else if (store.errorDetalle(); as mensaje) {
-    <app-mensaje-error [mensaje]="mensaje" (reintentar)="reintentar()" />
-  } @else if (store.lugarActual(); as actual) {
-    <app-location-form [lugar]="actual" [guardando]="store.guardando()" [errorServidor]="store.errorAccion()" (guardar)="onGuardar($event)" (cancelar)="onCancelar()" />
+  } @else if (errorCarga(); as mensaje) {
+    <app-mensaje-error [mensaje]="mensaje" (reintentar)="reintentar.emit()" />
+  } @else if (lugar(); as actual) {
+    <app-location-form [lugar]="actual" [guardando]="guardando()" [errorServidor]="errorServidor()" (guardar)="guardar.emit($event)" (cancelar)="cancelar.emit()" />
   }
 </div>

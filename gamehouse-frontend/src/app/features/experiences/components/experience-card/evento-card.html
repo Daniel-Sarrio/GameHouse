@@ -8,7 +8,7 @@
     <div class="mt-4 flex flex-wrap items-center gap-2">
       <a class="card-action" [routerLink]="['/experiencias', evento().slug]"><svg lucideEye [size]="16" aria-hidden="true"></svg> Ver</a>
       <a class="card-action" [routerLink]="['/experiencias', evento().id, 'editar']"><svg lucidePencil [size]="16" aria-hidden="true"></svg> Editar</a>
-      <button type="button" class="card-action card-toggle" [disabled]="store.guardando()" (click)="cambiarEstado()"><svg lucidePower [size]="16" aria-hidden="true"></svg> {{ evento().isActive ? 'Desactivar' : 'Activar' }}</button>
+      <button type="button" class="card-action card-toggle" [disabled]="guardando()" (click)="cambiarEstado.emit(evento())"><svg lucidePower [size]="16" aria-hidden="true"></svg> {{ evento().isActive ? 'Desactivar' : 'Activar' }}</button>
     </div>
   </div>
 </article>

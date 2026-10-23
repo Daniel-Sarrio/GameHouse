@@ -1,5 +1,6 @@
 const repo = require('../repos/events.repo');
 const AppError = require('./utils/app-error');
+const generateSku = require('./utils/sku');
 
 const getAllEvents = () => repo.findAll();
 const getFormOptions = () => repo.getFormOptions();
@@ -7,6 +8,33 @@ const getEventById = async (id) => {
   const event = await repo.findById(id);
   if (!event) throw new AppError('Evento no encontrado.', 404);
   return event;
+};
+const getEventBySku = async (sku) => {
+  const event = await repo.findBySku(sku);
+  if (!event) throw new AppError('Evento no encontrado.', 404);
+  return event;
+};
+const buildUniqueSku = async (name, excludeId = null) => {
+  const base = generateSku(name) || 'EVENTO';
+  let candidate = base;
+  let suffix = 2;
+  // Unicidad: al editar se excluye el propio evento, igual que con el slug.
+  while (await repo.skuExists(candidate, excludeId)) {
+    const ending = `-${suffix++}`;
+    candidate = `${base.slice(0, 180 - ending.length)}${ending}`;
+  }
+  return candidate;
+};
+const save = async (action) => {
+  try { return await action(); }
+  catch (error) {
+    // PostgreSQL también protege la unicidad ante dos peticiones simultáneas.
+    if (error.code === '23505') {
+      if (error.constraint === 'events_sku_key') throw new AppError('Ya existe un evento con ese SKU.', 409);
+      throw new AppError('Ya existe un evento con esos datos.', 409);
+    }
+    throw error;
+  }
 };
 const validateEvent = async (data) => {
   const options = await getFormOptions();
@@ -31,16 +59,23 @@ const validateEvent = async (data) => {
     || Date.parse(data.endDatetime) <= Date.parse(data.startDatetime))) {
     throw new AppError('La fecha de fin debe ser posterior a la de inicio.', 400);
   }
+  return options.experiences.find((item) => item.id === data.experienceId);
 };
 const createEvent = async (data) => {
-  await validateEvent(data);
-  return repo.create(data);
+  const experience = await validateEvent(data);
+  // El servidor genera el SKU; el cliente no puede escribirlo manualmente.
+  return save(async () => repo.create({ ...data, sku: await buildUniqueSku(experience.name) }));
 };
 const updateEvent = async (id, data) => {
   const current = await getEventById(id);
   const merged = { ...current, ...data };
-  await validateEvent(merged);
-  const event = await repo.update(id, data);
+  const experience = await validateEvent(merged);
+  const changes = { ...data };
+  // El SKU se conserva al cambiar fechas o precios y se recalcula al cambiar de experiencia.
+  if (data.experienceId && data.experienceId !== current.experienceId) {
+    changes.sku = await buildUniqueSku(experience.name, id);
+  }
+  const event = await save(() => repo.update(id, changes));
   if (!event) throw new AppError('Evento no encontrado.', 404);
   return event;
 };
@@ -49,4 +84,4 @@ const deleteEvent = async (id) => {
   await repo.remove(id);
   return event;
 };
-module.exports = { getAllEvents, getFormOptions, getEventById, createEvent, updateEvent, deleteEvent };
+module.exports = { getAllEvents, getFormOptions, getEventById, getEventBySku, createEvent, updateEvent, deleteEvent };

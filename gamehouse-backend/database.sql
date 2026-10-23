@@ -74,6 +74,7 @@ CREATE TABLE experience_categories (
 );
 CREATE TABLE events (
   id SERIAL PRIMARY KEY,
+  sku VARCHAR(180) NOT NULL UNIQUE,
   experience_id INTEGER NOT NULL REFERENCES experiences(id),
   location_id INTEGER NOT NULL REFERENCES locations(id),
   category_id INTEGER NOT NULL REFERENCES categories(id),

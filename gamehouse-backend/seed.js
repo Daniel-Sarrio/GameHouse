@@ -2,6 +2,7 @@ require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 
 const pool = require('./src/config/database');
 const generateSlug = require('./src/services/utils/slug');
+const generateSku = require('./src/services/utils/sku');
 
 const hosts = [
   'Equipo GameHouse',
@@ -124,12 +125,13 @@ async function seed() {
       const startText = start.toISOString().slice(0, 19);
       const endText = end.toISOString().slice(0, 19);
       const event = await client.query(
-        'INSERT INTO events (experience_id, location_id, category_id, start_datetime, end_datetime, price, capacity, status, image_url) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT DO NOTHING RETURNING id',
-        [experience.id, location.id, categoryIds[0], startText, endText, item.price, item.capacity, 'scheduled', imageUrl]);
+        'INSERT INTO events (experience_id, location_id, category_id, start_datetime, end_datetime, price, capacity, status, image_url, sku) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT DO NOTHING RETURNING id',
+        [experience.id, location.id, categoryIds[0], startText, endText, item.price, item.capacity, 'scheduled', imageUrl,
+          generateSku(`${item.name}-${location.id}-${startText}`)]);
       if (event.rowCount) createdEvents++;
     }
     // El mismo torneo se celebra dos veces con precio y capacidad distintos.
-    const fc = (await client.query("SELECT id FROM experiences WHERE slug IN ('torneo-fc27', 'torneo-de-fc27') ORDER BY id LIMIT 1")).rows[0];
+    const fc = (await client.query("SELECT id, name FROM experiences WHERE slug IN ('torneo-fc27', 'torneo-de-fc27') ORDER BY id LIMIT 1")).rows[0];
     if (fc) {
       const location = locationRows.find((row) => row.name === 'GameHouse Arena');
       const category = categoryRows.find((row) => row.name === 'Torneos');
@@ -138,8 +140,8 @@ async function seed() {
         ['2026-12-05T17:00:00', '2026-12-05T20:00:00', 20, 64],
       ]) {
         const result = await client.query(
-          'INSERT INTO events (experience_id, location_id, category_id, start_datetime, end_datetime, price, capacity, status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT DO NOTHING RETURNING id',
-          [fc.id, location.id, category.id, start, end, price, capacity, 'scheduled']);
+          'INSERT INTO events (experience_id, location_id, category_id, start_datetime, end_datetime, price, capacity, status, sku) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT DO NOTHING RETURNING id',
+          [fc.id, location.id, category.id, start, end, price, capacity, 'scheduled', generateSku(`${fc.name}-${location.id}-${start}`)]);
         if (result.rowCount) createdEvents++;
       }
     }

@@ -18,3 +18,8 @@ export interface Evento {
 }
 export type DatosEvento = Pick<Evento, 'name' | 'description' | 'imageUrl' | 'hostId' | 'categoryIds' | 'status' | 'isActive'>;
 export type CambiosEvento = Partial<DatosEvento>;
+
+export interface OpcionesEvento {
+  hosts: { id: number; name: string }[];
+  categories: { id: number; name: string }[];
+}

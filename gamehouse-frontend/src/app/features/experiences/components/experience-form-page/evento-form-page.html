@@ -5,12 +5,12 @@
   <p class="subtitulo">{{ editando() ? 'Actualiza los datos de esta experiencia.' : 'Añade una nueva experiencia al catálogo.' }}</p>
 
   @if (!editando()) {
-    <app-evento-form [guardando]="store.guardando()" [errorServidor]="store.errorAccion()" (guardar)="onGuardar($event)" (cancelar)="onCancelar()" />
-  } @else if (store.cargandoDetalle()) {
+    <app-evento-form [opciones]="opciones()" [cargando]="cargandoOpciones()" [errorOpciones]="errorOpciones()" (reintentarOpciones)="reintentarOpciones.emit()" [guardando]="guardando()" [errorServidor]="errorServidor()" (guardar)="guardar.emit($event)" (cancelar)="cancelar.emit()" />
+  } @else if (cargando()) {
     <app-estado-carga texto="Cargando experiencia…" />
-  } @else if (store.errorDetalle(); as mensaje) {
-    <app-mensaje-error [mensaje]="mensaje" (reintentar)="reintentar()" />
-  } @else if (store.eventoActual(); as evento) {
-    <app-evento-form [evento]="evento" [guardando]="store.guardando()" [errorServidor]="store.errorAccion()" (guardar)="onGuardar($event)" (cancelar)="onCancelar()" />
+  } @else if (errorCarga(); as mensaje) {
+    <app-mensaje-error [mensaje]="mensaje" (reintentar)="reintentar.emit()" />
+  } @else if (evento(); as evento) {
+    <app-evento-form [opciones]="opciones()" [cargando]="cargandoOpciones()" [errorOpciones]="errorOpciones()" (reintentarOpciones)="reintentarOpciones.emit()" [evento]="evento" [guardando]="guardando()" [errorServidor]="errorServidor()" (guardar)="guardar.emit($event)" (cancelar)="cancelar.emit()" />
   }
 </div>

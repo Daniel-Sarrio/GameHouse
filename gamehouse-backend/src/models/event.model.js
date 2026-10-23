@@ -1,8 +1,9 @@
 class Event {
-  constructor({ id, experience_id, experience_name, experience_slug, location_id, location_name, city, country,
+  constructor({ id, sku, experience_id, experience_name, experience_slug, location_id, location_name, city, country,
     category_id, category_name, start_datetime, end_datetime, price, capacity, status,
     image_url, duration_minutes, legacy_experience_id, created_at, updated_at }) {
     this.id = id;
+    this.sku = sku;
     this.experienceId = experience_id;
     this.experienceName = experience_name;
     this.experienceSlug = experience_slug;

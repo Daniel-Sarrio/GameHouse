@@ -4,12 +4,12 @@
   <h1>{{ editando() ? 'Editar categoría' : 'Nueva categoría' }}</h1>
   <p class="subtitulo">{{ editando() ? 'Actualiza los datos de esta categoría.' : 'Añade una categoría al catálogo.' }}</p>
   @if (!editando()) {
-    <app-category-form [guardando]="store.guardando()" [errorServidor]="store.errorAccion()" (guardar)="onGuardar($event)" (cancelar)="onCancelar()" />
-  } @else if (store.cargandoDetalle()) {
+    <app-category-form [guardando]="guardando()" [errorServidor]="errorServidor()" (guardar)="guardar.emit($event)" (cancelar)="cancelar.emit()" />
+  } @else if (cargando()) {
     <app-estado-carga texto="Cargando categoría…" />
-  } @else if (store.errorDetalle(); as mensaje) {
-    <app-mensaje-error [mensaje]="mensaje" (reintentar)="reintentar()" />
-  } @else if (store.categoriaActual(); as categoria) {
-    <app-category-form [categoria]="categoria" [guardando]="store.guardando()" [errorServidor]="store.errorAccion()" (guardar)="onGuardar($event)" (cancelar)="onCancelar()" />
+  } @else if (errorCarga(); as mensaje) {
+    <app-mensaje-error [mensaje]="mensaje" (reintentar)="reintentar.emit()" />
+  } @else if (categoria(); as categoria) {
+    <app-category-form [categoria]="categoria" [guardando]="guardando()" [errorServidor]="errorServidor()" (guardar)="guardar.emit($event)" (cancelar)="cancelar.emit()" />
   }
 </div>

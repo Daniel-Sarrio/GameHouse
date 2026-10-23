@@ -4,12 +4,12 @@
   <h1>{{ editando() ? 'Editar asignación' : 'Nueva asignación' }}</h1>
   <p class="subtitulo">Completa los datos de esta asignación.</p>
   @if (!editando()) {
-    <app-assignment-form [guardando]="store.guardando()" [errorServidor]="store.errorAccion()" (guardar)="onGuardar($event)" (cancelar)="onCancelar()" />
-  } @else if (store.cargandoDetalle()) {
+    <app-assignment-form [experiencias]="opciones().experiencias" [categorias]="opciones().categorias" [cargando]="cargandoOpciones()" [errorOpciones]="errorOpciones()" (reintentarOpciones)="reintentarOpciones.emit()" [guardando]="guardando()" [errorServidor]="errorServidor()" (guardar)="guardar.emit($event)" (cancelar)="cancelar.emit()" />
+  } @else if (cargando()) {
     <app-estado-carga texto="Cargando asignación…" />
-  } @else if (store.errorDetalle(); as mensaje) {
-    <app-mensaje-error [mensaje]="mensaje" (reintentar)="reintentar()" />
-  } @else if (store.asignacionActual(); as actual) {
-    <app-assignment-form [asignacion]="actual" [guardando]="store.guardando()" [errorServidor]="store.errorAccion()" (guardar)="onGuardar($event)" (cancelar)="onCancelar()" />
+  } @else if (errorCarga(); as mensaje) {
+    <app-mensaje-error [mensaje]="mensaje" (reintentar)="reintentar.emit()" />
+  } @else if (asignacion(); as actual) {
+    <app-assignment-form [experiencias]="opciones().experiencias" [categorias]="opciones().categorias" [cargando]="cargandoOpciones()" [errorOpciones]="errorOpciones()" (reintentarOpciones)="reintentarOpciones.emit()" [asignacion]="actual" [guardando]="guardando()" [errorServidor]="errorServidor()" (guardar)="guardar.emit($event)" (cancelar)="cancelar.emit()" />
   }
 </div>

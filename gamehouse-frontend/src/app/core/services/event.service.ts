@@ -1,13 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { RespuestaApi } from '../models/api.model';
-import { Celebracion, DatosCelebracion, CambiosCelebracion } from '../models/event.model';
+import { Celebracion, DatosCelebracion, CambiosCelebracion, OpcionesCelebracion } from '../models/event.model';
 import { ApiService } from './api.service';
 
-export interface OpcionesCelebracion {
-  experiences: { id: number; name: string }[];
-  locations: { id: number; name: string; city: string; country: string }[];
-  categories: { id: number; name: string; experienceId: number }[];
-}
 @Injectable({ providedIn: 'root' })
 export class CelebracionesService {
   private readonly api = inject(ApiService);
