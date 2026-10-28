@@ -64,7 +64,27 @@ const deleteEvent = async (req, res, next) => {
   }
 };
 
+const activateEvent = async (req, res, next) => {
+  try {
+    const data = await service.activateEvent(req.params.id);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const deactivateEvent = async (req, res, next) => {
+  try {
+    const data = await service.deactivateEvent(req.params.id);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
+  activateEvent,
+  deactivateEvent,
   getAllEvents,
   getFormOptions,
   getEventById,

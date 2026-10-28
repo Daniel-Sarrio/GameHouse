@@ -41,6 +41,7 @@ export class EventForm implements OnInit {
     price: this.fb.control(0, [Validators.min(0)]),
     capacity: this.fb.control(1, [Validators.min(1)]),
     status: this.fb.control<Celebracion['status']>('scheduled'),
+    isActive: this.fb.control(true),
     imageUrl: this.fb.control('', [validUrl]),
   });
   categoriasDisponibles(): OpcionesCelebracion['categories'] {
@@ -52,7 +53,7 @@ export class EventForm implements OnInit {
       experienceId: event.experienceId, locationId: event.locationId, categoryId: event.categoryId,
       startDatetime: fechaLocal(event.startDatetime),
       endDatetime: fechaLocal(event.endDatetime),
-      price: event.price, capacity: event.capacity, status: event.status, imageUrl: event.imageUrl ?? '',
+      price: event.price, capacity: event.capacity, status: event.status, isActive: event.isActive, imageUrl: event.imageUrl ?? '',
     });
   }
   cambiarExperiencia(): void { this.form.controls.categoryId.setValue(0); }

@@ -19,7 +19,7 @@
       @if (!confirmandoBorrado()) {
         <button type="button" class="boton boton-peligro" (click)="confirmandoBorrado.set(true)">Eliminar</button>
       } @else {
-        <span class="confirmar">¿Eliminar esta asignación?
+        <span class="confirmar">¿Retirar esta asignación? Se conservará en el historial.
           <button type="button" class="boton boton-peligro" [disabled]="store.guardando()" (click)="eliminar()">Sí, eliminar</button>
           <button type="button" class="boton boton-secundario" (click)="confirmandoBorrado.set(false)">Cancelar</button>
         </span>

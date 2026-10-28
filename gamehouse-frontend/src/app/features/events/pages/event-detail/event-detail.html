@@ -18,15 +18,16 @@
         @if (event.durationMinutes) { <div><dt>Duración anterior</dt><dd>{{ event.durationMinutes }} minutos</dd></div> }
         <div><dt>Precio</dt><dd>{{ precio(event.price) }}</dd></div>
         <div><dt>Capacidad</dt><dd>{{ event.capacity }} personas</dd></div>
-        <div><dt>Estado</dt><dd>{{ event.status }}</dd></div>
+        <div><dt>Estado</dt><dd>{{ event.status }} · {{ event.isActive ? 'Activo' : 'Inactivo' }}</dd></div>
         @if (event.legacyExperienceId) { <div><dt>Origen</dt><dd>Importado de la experiencia anterior #{{ event.legacyExperienceId }}</dd></div> }
       </dl></div>
     </article>
     @if (store.errorAccion(); as mensaje) { <div class="alerta" role="alert">{{ mensaje }}</div> }
     <div class="acciones">
       <a class="boton boton-primario" [routerLink]="['/eventos', event.id, 'editar']">Editar evento</a>
+      <button type="button" class="boton boton-secundario" [disabled]="store.guardando()" (click)="cambiarEstado()">{{ event.isActive ? 'Desactivar' : 'Activar' }}</button>
       @if (!confirmandoBorrado()) { <button type="button" class="boton boton-peligro" (click)="confirmandoBorrado.set(true)">Eliminar</button> }
-      @else { <span class="confirmar">¿Eliminar este evento?
+      @else { <span class="confirmar">¿Enviar este evento a eliminados? Sus datos se conservarán.
         <button type="button" class="boton boton-peligro" [disabled]="store.guardando()" (click)="eliminar()">Sí, eliminar</button>
         <button type="button" class="boton boton-secundario" (click)="confirmandoBorrado.set(false)">Cancelar</button>
       </span> }

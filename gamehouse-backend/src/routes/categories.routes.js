@@ -12,6 +12,6 @@ router.post('/', validate({ body: createCategorySchema }), ctrl.createCategory);
 router.patch('/:id', validate({ params: idParamsSchema, body: updateCategorySchema }), ctrl.updateCategory);
 router.patch('/:id/activate', validateId, ctrl.activateCategory);
 router.patch('/:id/deactivate', validateId, ctrl.deactivateCategory);
-router.delete('/:id', validateId, ctrl.deleteCategory);
+router.patch('/:id/delete', validateId, ctrl.deleteCategory);
 
 module.exports = router;

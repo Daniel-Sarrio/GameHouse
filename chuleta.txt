@@ -1,7 +1,0 @@
-
-carpeta schema validations
-updateExperience service validationId, //stock, capacity, fecha
-
-onGuardar Try Catch
-ExperienceEdit id
-    

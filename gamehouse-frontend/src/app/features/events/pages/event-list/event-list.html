@@ -15,14 +15,24 @@
         <thead><tr><th scope="col">ID</th><th scope="col">Experiencia</th><th scope="col">Lugar</th><th scope="col">Fechas</th><th scope="col">Precio</th><th scope="col">Capacidad</th><th scope="col">Estado</th><th scope="col" class="actions-heading">Acciones</th></tr></thead>
         <tbody>
           @for (event of visibles(); track event.id) {
-            <tr [class.inactive-row]="event.status === 'cancelled'">
+            <tr [class.inactive-row]="!event.isActive || event.status === 'cancelled'">
               <td class="id-cell">{{ event.id }}</td>
-              <td class="experience-cell"><a class="experience-name" [routerLink]="['/eventos', event.id]">{{ event.experienceName }}</a><span class="experience-slug">{{ event.categoryName }}</span></td>
+              <td class="experience-cell">
+                @if (event.isActive) { <a class="experience-name" [routerLink]="['/eventos', event.id]">{{ event.experienceName }}</a> }
+                @else { <span class="experience-name">{{ event.experienceName }}</span> }
+                <span class="experience-slug">{{ event.categoryName }}</span>
+              </td>
               <td><div class="location-card"><svg lucideMapPin [size]="18" aria-hidden="true"></svg><span><strong>{{ event.locationName }}</strong><small>{{ event.city }}, {{ event.country }}</small></span></div></td>
               <td><div class="location-card"><svg lucideCalendarDays [size]="18" aria-hidden="true"></svg><span><strong>{{ fecha(event.startDatetime) }}</strong><small>{{ event.endDatetime ? fecha(event.endDatetime) : '' }}</small></span></div></td>
               <td class="price-cell">{{ precio(event) }}</td><td>{{ event.capacity }}</td>
-              <td><span class="status-pill" [class.inactive]="event.status === 'cancelled' || event.status === 'draft'">{{ estado(event) }}</span></td>
-              <td><div class="row-actions"><a [routerLink]="['/eventos', event.id]" aria-label="Ver evento"><svg lucideEye [size]="17" aria-hidden="true"></svg><span>Ver</span></a><a [routerLink]="['/eventos', event.id, 'editar']" aria-label="Editar evento"><svg lucidePencil [size]="16" aria-hidden="true"></svg><span>Editar</span></a></div></td>
+              <td><span class="status-pill" [class.inactive]="!event.isActive || event.status === 'cancelled' || event.status === 'draft'">{{ estado(event) }} · {{ event.isActive ? 'Activo' : 'Inactivo' }}</span></td>
+              <td><div class="row-actions">
+                @if (event.isActive) {
+                  <a [routerLink]="['/eventos', event.id]" aria-label="Ver evento"><svg lucideEye [size]="17" aria-hidden="true"></svg><span>Ver</span></a>
+                  <a [routerLink]="['/eventos', event.id, 'editar']" aria-label="Editar evento"><svg lucidePencil [size]="16" aria-hidden="true"></svg><span>Editar</span></a>
+                }
+                <button type="button" [disabled]="store.guardando()" (click)="cambiarEstado(event)"><svg lucidePower [size]="16" aria-hidden="true"></svg><span>{{ event.isActive ? 'Desactivar' : 'Activar' }}</span></button>
+              </div></td>
             </tr>
           }
         </tbody>
@@ -34,4 +44,5 @@
       </footer>
     }
   </section>
+  @if (store.errorAccion(); as mensaje) { <p class="action-error" role="alert">{{ mensaje }}</p> }
 </div>

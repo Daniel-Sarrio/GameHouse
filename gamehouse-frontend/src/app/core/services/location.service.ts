@@ -20,6 +20,6 @@ export class LugaresService {
     return (await this.api.patch<RespuestaApi<Lugar>>(this.path + '/' + id, datos)).data;
   }
   async eliminarLugar(id: number): Promise<Lugar> {
-    return (await this.api.delete<RespuestaApi<Lugar>>(this.path + '/' + id)).data;
+    return (await this.api.patch<RespuestaApi<Lugar>>(this.path + '/' + id + '/delete', {})).data;
   }
 }

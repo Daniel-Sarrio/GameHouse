@@ -44,4 +44,8 @@ const softDelete = async (id) => {
   return toHost(result.rows[0]);
 };
 
-module.exports = { findAll, findById, findBySlug, slugExists, create, update, softDelete };
+const countByUser = async (userId, onlyActive = false, client = pool) => (await client.query(
+  'SELECT count(*)::int AS count FROM hosts WHERE user_id = $1 AND deleted_at IS NULL AND (NOT $2::boolean OR is_active)',
+  [userId, onlyActive],
+)).rows[0].count;
+module.exports = { findAll, findById, findBySlug, slugExists, create, update, softDelete, countByUser };

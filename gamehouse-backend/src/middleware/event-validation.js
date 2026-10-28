@@ -10,8 +10,9 @@ const fields = {
   capacity: z.number().int().positive(),
   status: z.enum(['draft', 'scheduled', 'cancelled', 'completed']),
   imageUrl: z.string().url().nullable(),
+  isActive: z.boolean(),
 };
-const createEventSchema = z.strictObject(fields);
+const createEventSchema = z.strictObject({ ...fields, isActive: fields.isActive.default(true) });
 const updateEventSchema = z.strictObject(Object.fromEntries(
   Object.entries(fields).map(([key, schema]) => [key, schema.optional()]),
 )).refine((data) => Object.keys(data).length > 0, 'Debes enviar al menos un campo.');

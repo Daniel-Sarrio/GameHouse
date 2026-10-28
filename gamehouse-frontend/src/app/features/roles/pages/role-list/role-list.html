@@ -1,7 +1,9 @@
 <div class="admin-list-page mx-auto max-w-7xl px-6 py-8 sm:px-10 sm:py-10">
   <header class="page-header">
     <div><p class="eyebrow">GameHouse / Administración</p><h1>Roles</h1><p class="page-description">Gestiona los roles de la plataforma.</p></div>
-    <a routerLink="/roles/nuevo" class="boton boton-primario"><svg lucidePlus [size]="18" aria-hidden="true"></svg> Nuevo rol</a>
+    @if (puedeCrear()) {
+      <a routerLink="/roles/nuevo" class="boton boton-primario"><svg lucidePlus [size]="18" aria-hidden="true"></svg> Nuevo rol</a>
+    }
   </header>
   <section class="list-panel" aria-label="Listado de roles">
     @if (store.cargando() && store.roles().length === 0) {

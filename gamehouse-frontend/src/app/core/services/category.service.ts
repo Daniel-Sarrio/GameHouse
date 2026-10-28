@@ -24,6 +24,6 @@ export class CategoriasService {
     return (await this.api.patch<RespuestaApi<Categoria>>(`${this.path}/${id}/${activar ? 'activate' : 'deactivate'}`, {})).data;
   }
   async eliminarCategoria(id: number): Promise<Categoria> {
-    return (await this.api.delete<RespuestaApi<Categoria>>(`${this.path}/${id}`)).data;
+    return (await this.api.patch<RespuestaApi<Categoria>>(`${this.path}/${id}` + '/delete', {})).data;
   }
 }

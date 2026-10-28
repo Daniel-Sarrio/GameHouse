@@ -7,5 +7,5 @@ router.get('/', ctrl.getAllLocations);
 router.get('/:id', validate({ params: idParamsSchema }), ctrl.getLocationById);
 router.post('/', validate({ body: createLocationSchema }), ctrl.createLocation);
 router.patch('/:id', validate({ params: idParamsSchema, body: updateLocationSchema }), ctrl.updateLocation);
-router.delete('/:id', validate({ params: idParamsSchema }), ctrl.deleteLocation);
+router.patch('/:id/delete', validate({ params: idParamsSchema }), ctrl.deleteLocation);
 module.exports = router;

@@ -20,6 +20,6 @@ export class RolesService {
     return (await this.api.patch<RespuestaApi<Rol>>(`${this.path}/${id}`, datos)).data;
   }
   async eliminarRol(id: number): Promise<Rol> {
-    return (await this.api.delete<RespuestaApi<Rol>>(`${this.path}/${id}`)).data;
+    return (await this.api.patch<RespuestaApi<Rol>>(`${this.path}/${id}` + '/delete', {})).data;
   }
 }

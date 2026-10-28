@@ -24,6 +24,6 @@ export class OrganizadoresService {
     return (await this.api.patch<RespuestaApi<Organizador>>(`${this.path}/${id}/${activar ? 'activate' : 'deactivate'}`, {})).data;
   }
   async eliminarOrganizador(id: number): Promise<Organizador> {
-    return (await this.api.delete<RespuestaApi<Organizador>>(`${this.path}/${id}`)).data;
+    return (await this.api.patch<RespuestaApi<Organizador>>(`${this.path}/${id}` + '/delete', {})).data;
   }
 }

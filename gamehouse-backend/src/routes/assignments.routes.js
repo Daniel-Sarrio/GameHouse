@@ -7,5 +7,5 @@ router.get('/', ctrl.getAllAssignments);
 router.get('/:experienceId/:categoryId', validate({ params: assignmentParamsSchema }), ctrl.getAssignmentById);
 router.post('/', validate({ body: assignmentSchema }), ctrl.createAssignment);
 router.patch('/:experienceId/:categoryId', validate({ params: assignmentParamsSchema, body: assignmentSchema }), ctrl.updateAssignment);
-router.delete('/:experienceId/:categoryId', validate({ params: assignmentParamsSchema }), ctrl.deleteAssignment);
+router.patch('/:experienceId/:categoryId/delete', validate({ params: assignmentParamsSchema }), ctrl.deleteAssignment);
 module.exports = router;

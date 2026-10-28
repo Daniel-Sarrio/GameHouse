@@ -35,8 +35,9 @@ const updateAssignment = async (experienceId, categoryId, data) => {
   return assignment;
 };
 const deleteAssignment = async (experienceId, categoryId) => {
-  const assignment = await getAssignmentById(experienceId, categoryId);
-  if (!await repo.remove(experienceId, categoryId)) throw new AppError('Asignación no encontrada.', 404);
+  await getAssignmentById(experienceId, categoryId);
+  const assignment = await repo.softDelete(experienceId, categoryId);
+  if (!assignment) throw new AppError('Asignación no encontrada.', 404);
   return assignment;
 };
 module.exports = { getAllAssignments, getAssignmentById, createAssignment, updateAssignment, deleteAssignment };

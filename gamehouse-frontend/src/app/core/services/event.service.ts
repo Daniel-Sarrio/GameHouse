@@ -23,6 +23,9 @@ export class CelebracionesService {
     return (await this.api.patch<RespuestaApi<Celebracion>>(`${this.path}/${id}`, datos)).data;
   }
   async eliminarCelebracion(id: number): Promise<Celebracion> {
-    return (await this.api.delete<RespuestaApi<Celebracion>>(`${this.path}/${id}`)).data;
+    return (await this.api.patch<RespuestaApi<Celebracion>>(`${this.path}/${id}` + '/delete', {})).data;
+  }
+  async cambiarEstado(id: number, activar: boolean): Promise<Celebracion> {
+    return (await this.api.patch<RespuestaApi<Celebracion>>(`${this.path}/${id}/${activar ? 'activate' : 'deactivate'}`, {})).data;
   }
 }

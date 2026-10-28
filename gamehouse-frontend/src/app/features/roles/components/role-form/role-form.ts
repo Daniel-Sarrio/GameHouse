@@ -1,6 +1,6 @@
 import { Component, OnInit, input, output, inject } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Rol, DatosRol } from '../../../../core/models/role.model';
+import { Rol, DatosRol, NOMBRES_ROL } from '../../../../core/models/role.model';
 
 @Component({
   selector: 'app-role-form',
@@ -15,8 +15,9 @@ export class RoleForm implements OnInit {
   readonly errorServidor = input<string | null>(null);
   readonly guardar = output<DatosRol>();
   readonly cancelar = output<void>();
+  readonly nombresRol = NOMBRES_ROL;
   readonly form = this.fb.group({
-    name: this.fb.control('', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(50)]),
+    name: this.fb.control<Rol['name'] | ''>('', [Validators.required, Validators.pattern(/^(USER|ADMIN|HOST)$/)]),
   });
 
   ngOnInit(): void {
@@ -26,12 +27,12 @@ export class RoleForm implements OnInit {
   error(): string | null {
     const control = this.form.controls.name;
     if (!control.invalid || !(control.dirty || control.touched)) return null;
-    if (control.hasError('maxlength')) return 'El nombre es demasiado largo.';
-    return 'El nombre es obligatorio.';
+    return 'Selecciona USER, ADMIN o HOST.';
   }
   onSubmit(): void {
     if (this.guardando()) return;
-    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
-    this.guardar.emit({ name: this.form.controls.name.value.trim() });
+    const name = this.form.controls.name.value;
+    if (this.form.invalid || !name) { this.form.markAllAsTouched(); return; }
+    this.guardar.emit({ name });
   }
 }

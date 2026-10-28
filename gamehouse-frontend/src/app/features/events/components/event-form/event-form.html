@@ -36,6 +36,7 @@
       </label>
     </div>
     <label class="campo">URL de imagen <input formControlName="imageUrl" type="url" placeholder="https://..." /> @if (error('imageUrl'); as mensaje) { <small class="field-error">{{ mensaje }}</small> }</label>
+    <label class="campo campo-check"><input formControlName="isActive" type="checkbox" /> Evento activo</label>
   }
   <div class="acciones">
     <button type="submit" class="boton boton-primario" [disabled]="guardando() || cargando() || !!errorOpciones()">{{ guardando() ? 'Guardando…' : celebracion() ? 'Guardar cambios' : 'Crear evento' }}</button>

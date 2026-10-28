@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { LucideEye, LucidePencil, LucidePlus, LucideMapPin, LucideCalendarDays } from '@lucide/angular';
+import { LucideEye, LucidePencil, LucidePlus, LucideMapPin, LucideCalendarDays, LucidePower } from '@lucide/angular';
 import { CelebracionesStore } from '../../../../core/stores/events.store';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { MensajeError } from '../../../../shared/components/error-state/mensaje-error';
@@ -10,7 +10,7 @@ import { precioTexto } from '../../../../core/utils/experience.utils';
 
 @Component({
   selector: 'app-event-list',
-  imports: [RouterLink, EmptyState, MensajeError, SkeletonLoader, LucideEye, LucidePencil, LucidePlus, LucideMapPin, LucideCalendarDays],
+  imports: [RouterLink, EmptyState, MensajeError, SkeletonLoader, LucideEye, LucidePencil, LucidePlus, LucideMapPin, LucideCalendarDays, LucidePower],
   templateUrl: './event-list.html',
   styleUrl: './event-list.css',
 })
@@ -30,7 +30,11 @@ export class EventList implements OnInit {
     ? this.filasPorPagina() === 'all' ? 1 : (this.paginaActual() - 1) * Number(this.filasPorPagina()) + 1 : 0);
   protected readonly hasta = computed(() => this.filasPorPagina() === 'all'
     ? this.store.celebraciones().length : Math.min(this.paginaActual() * Number(this.filasPorPagina()), this.store.celebraciones().length));
-  ngOnInit(): void { void this.store.cargarCelebraciones(); }
+  ngOnInit(): void { this.store.limpiarErrorAccion(); void this.store.cargarCelebraciones(); }
+  async cambiarEstado(event: Celebracion): Promise<void> {
+    if (this.store.guardando()) return;
+    await this.store.cambiarEstado(event.id, !event.isActive);
+  }
   reintentar(): void { void this.store.cargarCelebraciones(); }
   precio(event: Celebracion): string { return precioTexto(event.price); }
   fecha(value: string | null): string { return value ? new Date(value).toLocaleString('es-ES', { dateStyle:'short', timeStyle:'short' }) : 'Sin programar'; }

@@ -49,6 +49,14 @@ export class CelebracionesStore {
     }
     return deleted === true;
   }
+  async cambiarEstado(id: number, activar: boolean): Promise<Celebracion | null> {
+    const updated = await this.ejecutar(() => this.service.cambiarEstado(id, activar));
+    if (updated) {
+      this.celebraciones.update((rows) => rows.map((row) => row.id === id ? updated : row));
+      if (this.celebracionActual()?.id === id) this.celebracionActual.set(updated);
+    }
+    return updated;
+  }
   limpiarErrorAccion(): void { this.errorAccion.set(null); }
   private async ejecutar<T>(action: () => Promise<T>): Promise<T | null> {
     this.guardando.set(true);

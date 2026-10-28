@@ -2,7 +2,10 @@
   @if (errorServidor(); as mensaje) { <div class="alerta" role="alert">{{ mensaje }}</div> }
   <h2>Datos del rol</h2>
   <label class="campo">Nombre
-    <input formControlName="name" type="text" maxlength="50" />
+    <select formControlName="name">
+      <option value="" disabled>Selecciona un rol</option>
+      @for (nombre of nombresRol; track nombre) { <option [value]="nombre">{{ nombre }}</option> }
+    </select>
     @if (error(); as mensaje) { <small class="field-error">{{ mensaje }}</small> }
   </label>
   <div class="acciones">

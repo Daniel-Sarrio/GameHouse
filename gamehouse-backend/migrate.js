@@ -3,6 +3,42 @@ require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 const pool = require('./src/config/database');
 const generateSlug = require('./src/services/utils/slug');
 const generateSku = require('./src/services/utils/sku');
+const migrateAuth = require('./migrate-auth');
+const migrateSoftDelete = require('./migrate-soft-delete');
+
+async function migrateAllowedRoles(client) {
+  // No se eliminan ni reasignan usuarios si una base antigua contiene roles no válidos.
+  const invalid = await client.query("SELECT id, name FROM roles WHERE name NOT IN ('USER', 'ADMIN', 'HOST')");
+  if (invalid.rowCount) {
+    throw new Error('Hay roles no permitidos que deben revisarse antes de migrar: ' + invalid.rows.map((role) => `${role.id}: ${role.name}`).join(', '));
+  }
+  const constraint = await client.query(`SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'roles'::regclass AND conname = 'roles_allowed_name'`);
+  if (!constraint.rowCount) {
+    await client.query("ALTER TABLE roles ADD CONSTRAINT roles_allowed_name CHECK (name IN ('USER', 'ADMIN', 'HOST'))");
+  }
+}
+
+async function migrateActivityIntegrity(client) {
+  await client.query('ALTER TABLE events ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE');
+  await migrateSoftDelete(client);
+  // Corrige las dependencias anteriores sin volver a activar registros.
+  await client.query(`
+    UPDATE hosts SET is_active = FALSE WHERE is_active AND (deleted_at IS NOT NULL OR status IN ('archived', 'suspended'));
+    UPDATE categories SET is_active = FALSE WHERE is_active AND (deleted_at IS NOT NULL OR status IN ('archived', 'suspended'));
+    UPDATE experiences e SET is_active = FALSE,
+      status = CASE WHEN e.deleted_at IS NULL THEN 'suspended' ELSE e.status END,
+      updated_at = CURRENT_TIMESTAMP
+      FROM hosts h WHERE e.host_id = h.id AND e.is_active
+        AND (NOT h.is_active OR h.deleted_at IS NOT NULL OR e.deleted_at IS NOT NULL OR e.status IN ('archived', 'suspended'));
+    UPDATE events ev SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP
+      FROM experiences e, hosts h, categories c
+      WHERE ev.experience_id = e.id AND e.host_id = h.id AND ev.category_id = c.id AND ev.is_active
+        AND (NOT e.is_active OR e.deleted_at IS NOT NULL OR NOT h.is_active OR h.deleted_at IS NOT NULL
+          OR NOT c.is_active OR c.deleted_at IS NOT NULL OR NOT EXISTS (
+            SELECT 1 FROM experience_categories ec WHERE ec.experience_id = ev.experience_id AND ec.category_id = ev.category_id AND ec.deleted_at IS NULL));
+  `);
+}
 
 async function migrateEventSkus(client) {
   await client.query('ALTER TABLE events ADD COLUMN IF NOT EXISTS sku VARCHAR(180)');
@@ -39,8 +75,11 @@ async function migrate() {
     if (currentSchema.rows[0].has_events) {
       await client.query('ALTER TABLE experiences ALTER COLUMN host_id SET NOT NULL');
       await migrateEventSkus(client);
+      await migrateActivityIntegrity(client);
+      await migrateAllowedRoles(client);
+      await migrateAuth(client);
       await client.query('COMMIT');
-      console.log('Migración aplicada: events.sku VARCHAR(180) NOT NULL UNIQUE.');
+      console.log('Migración aplicada: catálogo, integridad asociativa, autenticación y perfiles.');
       return;
     }
     await client.query(`
@@ -331,6 +370,9 @@ async function migrate() {
         FOR EACH ROW EXECUTE FUNCTION sync_catalog_image();
     `);
     await migrateEventSkus(client);
+    await migrateActivityIntegrity(client);
+    await migrateAllowedRoles(client);
+    await migrateAuth(client);
     await client.query('COMMIT');
     console.log('Migración de experiences y events completada.');
   } catch (error) {

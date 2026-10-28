@@ -20,6 +20,6 @@ export class AsignacionesService {
     return (await this.api.patch<RespuestaApi<Asignacion>>(this.path + '/' + experienceId + '/' + categoryId, datos)).data;
   }
   async eliminarAsignacion(experienceId: number, categoryId: number): Promise<Asignacion> {
-    return (await this.api.delete<RespuestaApi<Asignacion>>(this.path + '/' + experienceId + '/' + categoryId)).data;
+    return (await this.api.patch<RespuestaApi<Asignacion>>(this.path + '/' + experienceId + '/' + categoryId + '/delete', {})).data;
   }
 }

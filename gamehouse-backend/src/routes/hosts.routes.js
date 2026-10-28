@@ -12,6 +12,6 @@ router.post('/', validate({ body: createHostSchema }), ctrl.createHost);
 router.patch('/:id', validate({ params: idParamsSchema, body: updateHostSchema }), ctrl.updateHost);
 router.patch('/:id/activate', validateId, ctrl.activateHost);
 router.patch('/:id/deactivate', validateId, ctrl.deactivateHost);
-router.delete('/:id', validateId, ctrl.deleteHost);
+router.patch('/:id/delete', validateId, ctrl.deleteHost);
 
 module.exports = router;

@@ -31,7 +31,7 @@ export class EventosService {
     return (await this.api.patch<RespuestaApi<Evento>>(`${this.path}/${id}/${activar ? 'activate' : 'deactivate'}`, {})).data;
   }
   async eliminarEvento(id: number): Promise<Evento> {
-    return (await this.api.delete<RespuestaApi<Evento>>(`${this.path}/${id}`)).data;
+    return (await this.api.patch<RespuestaApi<Evento>>(`${this.path}/${id}` + '/delete', {})).data;
   }
   private validarId(id: number): void {
     if (!Number.isSafeInteger(id) || id <= 0) throw new Error('El ID de la experiencia no es válido.');

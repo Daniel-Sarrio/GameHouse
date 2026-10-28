@@ -26,5 +26,10 @@ export class EventDetail implements OnInit {
     if (borrado) await this.router.navigate(['/eventos']);
     else this.confirmandoBorrado.set(false);
   }
+  async cambiarEstado(): Promise<void> {
+    const event = this.store.celebracionActual();
+    if (!event || this.store.guardando()) return;
+    await this.store.cambiarEstado(event.id, !event.isActive);
+  }
   reintentar(): void { void this.store.cargarCelebracion(Number(this.id())); }
 }

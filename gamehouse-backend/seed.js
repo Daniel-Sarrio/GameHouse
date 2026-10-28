@@ -4,6 +4,17 @@ const pool = require('./src/config/database');
 const generateSlug = require('./src/services/utils/slug');
 const generateSku = require('./src/services/utils/sku');
 
+// Los datos de prueba respetan la actividad de sus dependencias sin reactivarlas.
+const eventCanBeActive = async (client, experienceId, categoryId) => {
+  const result = await client.query(`SELECT e.is_active AND h.is_active AND c.is_active
+    AND e.deleted_at IS NULL AND h.deleted_at IS NULL AND c.deleted_at IS NULL
+    AND EXISTS (SELECT 1 FROM experience_categories ec
+      WHERE ec.experience_id = e.id AND ec.category_id = c.id AND ec.deleted_at IS NULL) AS active
+    FROM experiences e JOIN hosts h ON h.id = e.host_id CROSS JOIN categories c
+    WHERE e.id = $1 AND c.id = $2`, [experienceId, categoryId]);
+  return result.rows[0]?.active ?? false;
+};
+
 const hosts = [
   'Equipo GameHouse',
   'Pixel Masters',
@@ -95,9 +106,9 @@ async function seed() {
     for (const name of categories) await client.query(
       'INSERT INTO categories (name, slug) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING', [name, generateSlug(name)]);
 
-    const hostRows = (await client.query('SELECT id, name FROM hosts')).rows;
-    const locationRows = (await client.query('SELECT id, name FROM locations')).rows;
-    const categoryRows = (await client.query('SELECT id, name FROM categories')).rows;
+    const hostRows = (await client.query('SELECT id, name, is_active, deleted_at FROM hosts WHERE deleted_at IS NULL')).rows;
+    const locationRows = (await client.query('SELECT id, name FROM locations WHERE deleted_at IS NULL')).rows;
+    const categoryRows = (await client.query('SELECT id, name FROM categories WHERE deleted_at IS NULL')).rows;
     for (const [entityType, rows] of [['hosts', hostRows], ['locations', locationRows], ['categories', categoryRows]]) {
       for (const row of rows) {
         const imageUrl = 'https://picsum.photos/seed/gamehouse-' + entityType + '-' + row.id + '/800/600';
@@ -110,13 +121,14 @@ async function seed() {
       const host = hostRows.find((row) => row.name === item.host);
       const location = locationRows.find((row) => row.name === item.location);
       const categoryIds = item.categories.map((name) => categoryRows.find((row) => row.name === name)?.id);
-      if (!host || !location || categoryIds.some((id) => !id)) throw new Error('Faltan referencias para ' + item.name);
+      if (!host || !location || categoryIds.some((id) => !id)) continue;
       const imageUrl = 'https://picsum.photos/seed/' + item.image + '/1200/800';
       const inserted = await client.query(
-        'INSERT INTO experiences (name, slug, description, image_url, host_id, status, is_active) VALUES ($1,$2,$3,$4,$5,$6,TRUE) ON CONFLICT (slug) DO NOTHING RETURNING id',
-        [item.name, item.slug, item.description, imageUrl, host.id, item.status]);
+        'INSERT INTO experiences (name, slug, description, image_url, host_id, status, is_active) VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (slug) DO NOTHING RETURNING id',
+        [item.name, item.slug, item.description, imageUrl, host.id, item.status, host.is_active && !host.deleted_at]);
       if (inserted.rowCount) createdExperiences++;
-      const experience = inserted.rows[0] || (await client.query('SELECT id FROM experiences WHERE slug = $1', [item.slug])).rows[0];
+      const experience = inserted.rows[0] || (await client.query('SELECT id FROM experiences WHERE slug = $1 AND deleted_at IS NULL', [item.slug])).rows[0];
+      if (!experience) continue;
       for (const categoryId of categoryIds) await client.query(
         'INSERT INTO experience_categories (experience_id, category_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',
         [experience.id, categoryId]);
@@ -125,13 +137,13 @@ async function seed() {
       const startText = start.toISOString().slice(0, 19);
       const endText = end.toISOString().slice(0, 19);
       const event = await client.query(
-        'INSERT INTO events (experience_id, location_id, category_id, start_datetime, end_datetime, price, capacity, status, image_url, sku) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT DO NOTHING RETURNING id',
+        'INSERT INTO events (experience_id, location_id, category_id, start_datetime, end_datetime, price, capacity, status, image_url, sku, is_active) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) ON CONFLICT DO NOTHING RETURNING id',
         [experience.id, location.id, categoryIds[0], startText, endText, item.price, item.capacity, 'scheduled', imageUrl,
-          generateSku(`${item.name}-${location.id}-${startText}`)]);
+          generateSku(`${item.name}-${location.id}-${startText}`), await eventCanBeActive(client, experience.id, categoryIds[0])]);
       if (event.rowCount) createdEvents++;
     }
     // El mismo torneo se celebra dos veces con precio y capacidad distintos.
-    const fc = (await client.query("SELECT id, name FROM experiences WHERE slug IN ('torneo-fc27', 'torneo-de-fc27') ORDER BY id LIMIT 1")).rows[0];
+    const fc = (await client.query("SELECT id, name FROM experiences WHERE slug IN ('torneo-fc27', 'torneo-de-fc27') AND deleted_at IS NULL ORDER BY id LIMIT 1")).rows[0];
     if (fc) {
       const location = locationRows.find((row) => row.name === 'GameHouse Arena');
       const category = categoryRows.find((row) => row.name === 'Torneos');
@@ -140,8 +152,8 @@ async function seed() {
         ['2026-12-05T17:00:00', '2026-12-05T20:00:00', 20, 64],
       ]) {
         const result = await client.query(
-          'INSERT INTO events (experience_id, location_id, category_id, start_datetime, end_datetime, price, capacity, status, sku) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT DO NOTHING RETURNING id',
-          [fc.id, location.id, category.id, start, end, price, capacity, 'scheduled', generateSku(`${fc.name}-${location.id}-${start}`)]);
+          'INSERT INTO events (experience_id, location_id, category_id, start_datetime, end_datetime, price, capacity, status, sku, is_active) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT DO NOTHING RETURNING id',
+          [fc.id, location.id, category.id, start, end, price, capacity, 'scheduled', generateSku(`${fc.name}-${location.id}-${start}`), await eventCanBeActive(client, fc.id, category.id)]);
         if (result.rowCount) createdEvents++;
       }
     }

@@ -1,6 +1,7 @@
 export interface Celebracion {
   id: number;
   sku: string;
+  isActive: boolean;
   experienceId: number;
   experienceName: string;
   experienceSlug: string;
@@ -20,9 +21,10 @@ export interface Celebracion {
   legacyExperienceId: number | null;
   createdAt: string;
   updatedAt: string;
+  deletedAt: string | null;
 }
 export type DatosCelebracion = Pick<Celebracion, 'experienceId' | 'locationId' | 'categoryId' |
-  'startDatetime' | 'endDatetime' | 'price' | 'capacity' | 'status' | 'imageUrl'>;
+  'startDatetime' | 'endDatetime' | 'price' | 'capacity' | 'status' | 'imageUrl' | 'isActive'>;
 export type CambiosCelebracion = Partial<DatosCelebracion>;
 
 export interface OpcionesCelebracion {

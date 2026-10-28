@@ -2,6 +2,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { LucideEye, LucidePencil, LucidePlus } from '@lucide/angular';
 import { RolesStore } from '../../../../core/stores/roles.store';
+import { NOMBRES_ROL } from '../../../../core/models/role.model';
 import { EmptyState } from '../../../../shared/components/empty-state/empty-state';
 import { MensajeError } from '../../../../shared/components/error-state/mensaje-error';
 import { SkeletonLoader } from '../../../../shared/components/skeleton-loader/skeleton-loader';
@@ -14,6 +15,8 @@ import { SkeletonLoader } from '../../../../shared/components/skeleton-loader/sk
 })
 export class RoleList implements OnInit {
   protected readonly store = inject(RolesStore);
+  protected readonly puedeCrear = computed(() => !this.store.cargando() && !this.store.error()
+    && NOMBRES_ROL.some((name) => !this.store.roles().some((rol) => rol.name === name)));
   protected readonly pagina = signal(1);
   protected readonly filasPorPagina = signal<number | 'all'>('all');
   protected readonly totalPaginas = computed(() => this.filasPorPagina() === 'all'

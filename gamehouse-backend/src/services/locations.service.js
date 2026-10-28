@@ -22,14 +22,8 @@ const updateLocation = async (id, data) => {
   return location;
 };
 const deleteLocation = async (id) => {
-  try {
-    const location = await repo.remove(id);
-    if (!location) throw new AppError('Lugar no encontrado.', 404);
-    return location;
-  } catch (error) {
-    // Un lugar usado por eventos no se puede borrar: primero hay que cambiar su lugar.
-    if (error.code === '23503') throw new AppError('Este lugar está asociado a eventos. Cambia su lugar antes de eliminarlo.', 409);
-    throw error;
-  }
+  const location = await repo.softDelete(id);
+  if (!location) throw new AppError('Lugar no encontrado.', 404);
+  return location;
 };
 module.exports = { getAllLocations, getLocationById, createLocation, updateLocation, deleteLocation };

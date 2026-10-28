@@ -80,8 +80,16 @@ const updateEvent = async (id, data) => {
   return event;
 };
 const deleteEvent = async (id) => {
-  const event = await getEventById(id);
-  await repo.remove(id);
+  const event = await repo.softDelete(id);
+  if (!event) throw new AppError('Evento no encontrado.', 404);
   return event;
 };
-module.exports = { getAllEvents, getFormOptions, getEventById, getEventBySku, createEvent, updateEvent, deleteEvent };
+const setEventActive = async (id, isActive) => {
+  await getEventById(id);
+  // La BD valida las dependencias al activar y conserva el estado del evento al desactivar.
+  const event = await save(() => repo.update(id, { isActive }));
+  if (!event) throw new AppError('Evento no encontrado.', 404);
+  return event;
+};
+module.exports = { getAllEvents, getFormOptions, getEventById, getEventBySku, createEvent, updateEvent, deleteEvent,
+  activateEvent: (id) => setEventActive(id, true), deactivateEvent: (id) => setEventActive(id, false) };

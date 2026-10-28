@@ -5,10 +5,11 @@ const AppError = require('../services/utils/app-error');
 const columns = `e.id, e.name, e.slug, e.description, e.image_url, e.host_id,
   h.name AS host_name, e.status, e.is_active, e.created_at, e.updated_at, e.deleted_at,
   COALESCE((SELECT array_agg(ec.category_id ORDER BY ec.category_id) FROM experience_categories ec
-    WHERE ec.experience_id = e.id), '{}') AS category_ids,
+    JOIN categories c ON c.id = ec.category_id
+    WHERE ec.experience_id = e.id AND ec.deleted_at IS NULL AND c.deleted_at IS NULL), '{}') AS category_ids,
   COALESCE((SELECT array_agg(c.name ORDER BY c.name) FROM experience_categories ec
-    JOIN categories c ON c.id = ec.category_id WHERE ec.experience_id = e.id), '{}') AS category_names,
-  (SELECT count(*)::int FROM events ev WHERE ev.experience_id = e.id) AS event_count`;
+    JOIN categories c ON c.id = ec.category_id WHERE ec.experience_id = e.id AND ec.deleted_at IS NULL AND c.deleted_at IS NULL), '{}') AS category_names,
+  (SELECT count(*)::int FROM events ev WHERE ev.experience_id = e.id AND ev.deleted_at IS NULL) AS event_count`;
 const select = `SELECT ${columns} FROM experiences e LEFT JOIN hosts h ON h.id = e.host_id`;
 const toExperience = (row) => row ? new Experience(row) : null;
 const findAll = async () => (await pool.query(`${select} WHERE e.deleted_at IS NULL ORDER BY e.created_at DESC, e.id DESC`)).rows.map(toExperience);
@@ -32,8 +33,11 @@ const checkReferences = async (client, data) => {
   }
 };
 const replaceCategories = async (client, id, ids) => {
-  await client.query('DELETE FROM experience_categories WHERE experience_id = $1', [id]);
-  await client.query('INSERT INTO experience_categories (experience_id, category_id) SELECT $1, unnest($2::int[])', [id, ids]);
+  // Solo se quitan las categorías retiradas: conservar una asignación no debe desactivar sus eventos.
+  await client.query('UPDATE experience_categories SET deleted_at = CURRENT_TIMESTAMP WHERE experience_id = $1 AND deleted_at IS NULL AND NOT (category_id = ANY($2::int[]))', [id, ids]);
+  await client.query(`INSERT INTO experience_categories (experience_id, category_id) SELECT $1, unnest($2::int[])
+    ON CONFLICT (experience_id, category_id) DO UPDATE SET deleted_at = NULL
+    WHERE experience_categories.deleted_at IS NOT NULL`, [id, ids]);
 };
 const create = async (data) => {
   const client = await pool.connect();
@@ -54,7 +58,7 @@ const update = async (id, data) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const current = await client.query('SELECT id FROM experiences WHERE id = $1 AND deleted_at IS NULL', [id]);
+    const current = await client.query('SELECT id FROM experiences WHERE id = $1 AND deleted_at IS NULL FOR UPDATE', [id]);
     if (!current.rowCount) { await client.query('ROLLBACK'); return null; }
     if (data.hostId !== undefined || data.categoryIds !== undefined) {
       const old = await findById(id);
@@ -64,7 +68,7 @@ const update = async (id, data) => {
     const entries = Object.entries(data).filter(([key]) => columns[key]);
     if (entries.length) {
       const assignments = entries.map(([key], i) => `${columns[key]} = $${i+1}`);
-      await client.query(`UPDATE experiences SET ${assignments.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $${entries.length+1}`,
+      await client.query(`UPDATE experiences SET ${assignments.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $${entries.length+1} AND deleted_at IS NULL`,
         [...entries.map(([, value]) => value), id]);
     }
     if (data.categoryIds !== undefined) await replaceCategories(client, id, data.categoryIds);
@@ -80,4 +84,7 @@ const softDelete = async (id) => {
   return result.rowCount ? findByIdIncludingDeleted(id) : null;
 };
 const findByIdIncludingDeleted = async (id) => toExperience((await pool.query(`${select} WHERE e.id = $1`, [id])).rows[0]);
-module.exports = { findAll, findById, findBySlug, slugExists, getFormOptions, create, update, softDelete };
+const findOwnership = async (id) => (await pool.query(`SELECT e.host_id AS "hostId", h.user_id AS "userId"
+  FROM experiences e JOIN hosts h ON h.id = e.host_id
+  WHERE e.id = $1 AND e.deleted_at IS NULL`, [id])).rows[0];
+module.exports = { findAll, findById, findBySlug, slugExists, getFormOptions, create, update, softDelete, findOwnership };

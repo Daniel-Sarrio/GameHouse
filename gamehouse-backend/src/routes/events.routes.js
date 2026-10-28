@@ -9,5 +9,7 @@ router.get('/sku/:sku', validate({ params: skuParamsSchema }), ctrl.getEventBySk
 router.get('/:id', validate({ params: idParamsSchema }), ctrl.getEventById);
 router.post('/', validate({ body: createEventSchema }), ctrl.createEvent);
 router.patch('/:id', validate({ params: idParamsSchema, body: updateEventSchema }), ctrl.updateEvent);
-router.delete('/:id', validate({ params: idParamsSchema }), ctrl.deleteEvent);
+router.patch('/:id/activate', validate({ params: idParamsSchema }), ctrl.activateEvent);
+router.patch('/:id/deactivate', validate({ params: idParamsSchema }), ctrl.deactivateEvent);
+router.patch('/:id/delete', validate({ params: idParamsSchema }), ctrl.deleteEvent);
 module.exports = router;
