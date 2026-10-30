@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { randomUUID } = require('crypto');
 
 const secret = process.env.JWT_SECRET;
 if (!secret || Buffer.byteLength(secret) < 32) {
@@ -13,7 +14,7 @@ const audience = 'gamehouse-api';
 
 module.exports = {
   signToken: (user) => jwt.sign({ role: user.role }, secret, {
-    algorithm: 'HS256', subject: user.id, expiresIn, issuer, audience,
+    algorithm: 'HS256', subject: user.id, jwtid: randomUUID(), expiresIn, issuer, audience,
   }),
   verifyToken: (token) => jwt.verify(token, secret, {
     algorithms: ['HS256'], issuer, audience,

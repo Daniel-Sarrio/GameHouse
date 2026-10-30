@@ -496,6 +496,40 @@ test('migración de usuarios repetible conserva perfiles y fechas de borrado', a
   } finally { await client.query('ROLLBACK'); client.release(); }
 });
 
+test('me pasa por el servicio y devuelve el usuario actual sin credenciales', async () => {
+  const service = require('../src/services/auth.service');
+  const current = await service.me(admin.user.id);
+  assert.equal(current.role, 'ADMIN');
+  assert.equal(current.password_hash, undefined);
+  await assert.rejects(service.me(randomUUID()), error => error.statusCode === 404 || error.status === 404);
+});
+
+test('logout revoca solo el JWT presentado y conserva otras sesiones y la cuenta', async () => {
+  const service = require('../src/services/auth.service');
+  const { signToken } = require('../src/services/utils/jwt');
+  const current = await service.me(admin.user.id);
+  const first = signToken(current);
+  const second = signToken(current);
+  assert.notEqual(first, second);
+  assert.notEqual(jwt.decode(first).jti, jwt.decode(second).jti);
+  assert.equal((await request('POST', '/api/auth/logout')).status, 401);
+  assert.equal((await request('POST', '/api/auth/logout', { token: 'invalid' })).status, 401);
+  const result = await request('POST', '/api/auth/logout', { token: first });
+  assert.equal(result.status, 200);
+  assert.equal(result.data.success, true);
+  assert.equal(result.headers.get('cache-control'), 'no-store');
+  assert.equal((await request('GET', '/api/auth/me', { token: first })).status, 401);
+  assert.equal((await request('GET', '/api/users', { token: first })).status, 401);
+  assert.equal((await request('POST', '/api/auth/logout', { token: first })).status, 401);
+  assert.equal((await request('GET', '/api/auth/me', { token: second })).status, 200);
+  const stored = (await pool.query('SELECT token_hash, expires_at FROM revoked_tokens')).rows;
+  assert.ok(stored.some(row => /^[0-9a-f]{64}$/.test(row.token_hash)));
+  assert.ok(stored.every(row => row.token_hash !== first));
+  assert.equal((await service.me(current.id)).isActive, true);
+  const session = await service.login({ email: 'admin@example.invalid', password });
+  assert.equal((await request('GET', '/api/auth/me', { token: session.token })).status, 200);
+});
+
 test('login y registro limitan intentos por separado', async () => {
   let result;
   for (let i = 0; i < 22; i++) result = await request('POST', '/api/auth/login', { body: {} });

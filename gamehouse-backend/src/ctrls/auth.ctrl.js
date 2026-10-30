@@ -8,5 +8,12 @@ module.exports = {
     try { res.json({ success: true, data: await service.login(req.body) }); }
     catch (error) { next(error); }
   },
-  me: (req, res) => res.json({ success: true, data: req.user }),
+  me: async (req, res, next) => {
+    try { res.json({ success: true, data: await service.me(req.user.id) }); }
+    catch (error) { next(error); }
+  },
+  logout: async (req, res, next) => {
+    try { res.json({ success: true, data: await service.logout(req.auth) }); }
+    catch (error) { next(error); }
+  },
 };

@@ -47,6 +47,16 @@ Repetir el email devuelve 409. Añadir `"role": "ADMIN"` devuelve 400 y no crea 
 
 Devuelve 200 con `data.token` y `data.user`; credenciales incorrectas devuelven 401. Guarda `data.token` en la variable `token`. Para las siguientes peticiones usa Authorization → Bearer Token → `{{token}}`.
 
+### Cerrar sesión
+
+Envía `POST {{baseUrl}}/api/auth/logout` con Authorization → Bearer Token → `{{token}}`. No necesita cuerpo. Devuelve 200 con `success: true` y `data.message`. El token presentado queda revocado; reutilizarlo en una ruta protegida devuelve 401, incluso tras reiniciar el backend. Otras sesiones siguen siendo válidas.
+
+Después de una respuesta correcta, elimina el token de Postman:
+
+```js
+if (pm.response.code === 200) pm.environment.unset('token');
+```
+
 ### Usuario y perfil propios
 
 - `GET {{baseUrl}}/api/auth/me`

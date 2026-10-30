@@ -8,6 +8,8 @@ export const errorInterceptor: HttpInterceptorFn = (request, next) => {
   const alerts = inject(AlertService);
   return next(request).pipe(catchError((error: unknown) => {
     if (!(error instanceof HttpErrorResponse)) return throwError(() => error);
+    // La pantalla de login y la sesión gestionan estos errores sin alertas duplicadas.
+    if (error.status === 401 || /\/auth\/(login|me|logout)(?:\?|$)/.test(request.url)) return throwError(() => error);
     let message: string;
     if (error.status === 0) {
       message = 'No se puede conectar con el servidor. Comprueba que el backend está iniciado.';

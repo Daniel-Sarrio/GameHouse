@@ -8,4 +8,5 @@ router.use((req, res, next) => { res.set('Cache-Control', 'no-store'); next(); }
 router.post('/register', registerLimiter, validate({ body: registerSchema }), ctrl.register);
 router.post('/login', loginLimiter, validate({ body: loginSchema }), ctrl.login);
 router.get('/me', authenticate, ctrl.me);
+router.post('/logout', authenticate, ctrl.logout);
 module.exports = router;

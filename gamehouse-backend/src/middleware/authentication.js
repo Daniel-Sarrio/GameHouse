@@ -1,6 +1,7 @@
 const { verifyToken } = require('../services/utils/jwt');
 const { rateLimit } = require('express-rate-limit');
 const users = require('../repos/users.repo');
+const auth = require('../repos/auth.repo');
 const AppError = require('../services/utils/app-error');
 const { z } = require('zod');
 
@@ -15,9 +16,11 @@ const authenticate = async (req, res, next) => {
     return next(new AppError('Authentication required', 401));
   }
   try {
+    if (await auth.isTokenRevoked(match[1])) return next(new AppError('Authentication required', 401));
     const user = await users.findById(payload.sub);
     if (!user) return next(new AppError('Authentication required', 401));
     req.user = user;
+    req.auth = { token: match[1], expiresAt: new Date(payload.exp * 1000) };
     return next();
   } catch (error) { return next(error); }
 };

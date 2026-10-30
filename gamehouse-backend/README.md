@@ -60,7 +60,7 @@ Para una base vacía, aplica primero `database.sql` con tu cliente PostgreSQL. N
 | Categorías | `/api/categories` |
 | Organizadores | `/api/hosts` |
 | Roles | `/api/roles` |
-| Autenticación | `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me` |
+| Autenticación | `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout` |
 | Perfiles | `GET /api/profiles/me`, `PATCH /api/profiles/me`, `GET /api/profiles/:id`, `PATCH /api/profiles/:id` |
 | Usuarios (ADMIN) | `GET /api/users`, `GET /api/users/active`, `GET /api/users/deleted`, `GET /api/users/:id`, `POST /api/users`, `PATCH /api/users/:id`, `PATCH /api/users/:id/active`, `PATCH /api/users/:id/softdelete` |
 
@@ -86,6 +86,8 @@ Genera `JWT_SECRET` con `node -e "console.log(require('crypto').randomBytes(48).
 
 - Registro: email, password de 12 a 128 caracteres y, opcionalmente, firstName, lastName, phone y avatarUrl. Rechaza campos adicionales, incluido role. Siempre crea USER.
 - Login: devuelve `data.token` y `data.user`. Las contraseñas nuevas usan Argon2id; un login correcto con bcrypt antiguo actualiza el hash. No se devuelven hashes.
+- `GET /api/auth/me` sigue el flujo ruta → controlador → servicio → repositorio y devuelve el usuario actual en `data`. `POST /api/auth/logout` requiere Bearer y revoca ese token en PostgreSQL, sin desactivar la cuenta ni cerrar otras sesiones. El cliente debe borrar su token local tras cerrar sesión. Cada JWT nuevo tiene un `jti` único, incluso en logins del mismo segundo.
+- La migración `005_auth_logout.sql`, incluida en `npm run migrate:auth` y `npm run migrate`, crea `revoked_tokens`. Solo guarda la huella SHA-256 y la caducidad; las revocaciones sobreviven al reinicio del backend y se limpian cuando caducan durante posteriores cierres de sesión.
 - Enviar `Authorization: Bearer <token>` en las rutas protegidas. JWT usa HS256, emisor y audiencia fijos, subject UUID y expiración obligatoria. El payload incluye `role` (USER o ADMIN) al emitir el token. Para comprobar permisos se consulta el rol actual en PostgreSQL en cada petición; eliminar el usuario invalida sus tokens.
 - USER consulta y modifica su perfil. ADMIN accede a cualquier perfil y a `/api/users`. `:id` en perfiles identifica el perfil, no el usuario.
 - Las lecturas de catálogos siguen disponibles. Las escrituras de eventos, categorías, organizadores, lugares y asignaciones, la creación de experiencias y todas las rutas de roles requieren ADMIN.

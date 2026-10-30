@@ -1,5 +1,6 @@
 const pool = require('../config/database');
 const users = require('../repos/users.repo');
+const auth = require('../repos/auth.repo');
 const profiles = require('../repos/profiles.repo');
 const AppError = require('./utils/app-error');
 const { hashPassword, verifyPassword } = require('./utils/password');
@@ -41,4 +42,15 @@ const login = async ({ email, password }) => {
   return { user, token };
 };
 
-module.exports = { register, login };
+const me = async (id) => {
+  const user = await users.findById(id);
+  if (!user) throw new AppError('User not found', 404);
+  return user;
+};
+
+const logout = async ({ token, expiresAt }) => {
+  await auth.revokeToken(token, expiresAt);
+  return { message: 'Sesión cerrada correctamente.' };
+};
+
+module.exports = { register, login, me, logout };

@@ -1,20 +1,21 @@
 # GameHouse Frontend
 
-Dashboard de administración Angular para la tabla `experiences` de GameHouse. Mantiene la arquitectura `core` / `features` / `layouts` / `shared` y consume únicamente la API Express existente.
+Dashboard Angular conectado a la API Express + PostgreSQL de GameHouse. Sigue la estructura del frontend de referencia: `auth` / `core` / `features` / `layouts` / `shared`. Usuarios y perfiles usan UUID; los catálogos mantienen IDs numéricos.
 
 ## Flujo de uso
 
-1. La raíz `/` muestra el resumen administrativo y el catálogo sin filtros.
-2. Cada tarjeta abre `/eventos/:slug` con el detalle.
-3. La navegación lleva a `/eventos/nuevo` para crear.
-4. Desde el detalle se abre `/eventos/:slug/editar` para modificar con el mismo formulario.
-5. Desde el listado y el detalle se puede activar o desactivar. El detalle también permite el borrado lógico con confirmación.
-6. Después de crear o editar, la aplicación vuelve al detalle; después de eliminar, vuelve al catálogo.
+1. Inicia sesión en `/login`. La raíz redirige a `/dashboard`.
+2. USER y ADMIN acceden a su dashboard y editan sus datos en `/perfil`.
+3. ADMIN accede a `/usuarios`, `/experiencias`, `/eventos`, `/categorias`, `/organizadores`, `/lugares` y `/roles`, incluidos detalles y formularios.
+4. El menú adapta sus opciones al rol. Un USER que intenta abrir un módulo de administración llega a `/sin-acceso`.
+5. Los usuarios se pueden crear, editar, activar/desactivar y eliminar mediante softdelete. Los datos eliminados se conservan.
+6. Cerrar sesión o caducar el JWT lleva al login. Los guards conservan la ruta de destino para después del acceso.
 
 ## Estructura
 
 ```text
 src/app/
+├── auth/                # store, servicio, interceptor, guards y login
 ├── core/
 │   ├── interceptors/     # petición, carga y errores HTTP
 │   ├── models/           # respuesta API y experiencia PostgreSQL
@@ -22,6 +23,9 @@ src/app/
 │   ├── stores/           # estado con Signals
 │   └── utils/
 ├── features/
+│   ├── dashboard/       # inicio adaptado al rol
+│   ├── profile/         # perfil propio
+│   ├── users/           # formulario y listado de administración
 │   └── experiences/
 │       ├── components/   # tarjeta, grid y formulario reactivo
 │       ├── pages/        # listado, detalle, creación y edición
@@ -33,9 +37,17 @@ src/app/
 src/environments/          # URL y tiempo de espera de la API
 ```
 
-Las páginas coordinan el flujo. Los componentes muestran la interfaz. El store mantiene lista, detalle y errores con Angular Signals. Todas las llamadas HTTP pasan por `ApiService`, con timeout e interceptores. Los formularios usan Reactive Forms y errores inline. La interfaz usa Tailwind CSS, iconos Lucide, ngx-skeleton-loader, ngx-spinner y SweetAlert2 para errores globales.
+Las páginas coordinan UI y routing. Los stores mantienen el estado con Angular Signals. Los servicios consumen la API con timeout e interceptores. Los formularios usan Reactive Forms y errores inline. La interfaz usa Tailwind CSS, iconos Lucide, ngx-skeleton-loader, ngx-spinner y SweetAlert2 para errores globales.
 
-No se utilizan identificadores de MongoDB: las URLs visibles y las consultas de detalle usan `slug`. La API existente exige el `id` numérico para editar, activar, desactivar y borrar. El backend no ofrece aún endpoints ni tablas para `users`, `hosts`, `categories`, `locations` o `departures`, por lo que no se muestran controles que aparenten gestionarlos. La arquitectura modular permite añadir esas features y autenticación cuando exista su API.
+## Autenticación y RBAC
+
+`AuthStore` expone `user`, `token`, `isAuthenticated`, `isAdmin`, `roles`, `login(session)`, `logout()` y `hasRole(role)`. `AuthService` ofrece `login(credentials)`, `logout()`, `restoreSession()` y `validateSession()`; se ocupa de HTTP y sincronizar el store, sin routing ni lógica de UI.
+
+El token se persiste en localStorage bajo `gamehouse.auth.token`. Antes de autorizar una ruta se consulta `/auth/me`, cuya respuesta es directamente `data: user`. Los permisos usan el rol actual de esa respuesta, no un usuario persistido ni el rol antiguo del JWT. El interceptor envía Bearer solo a la API configurada, excluyendo login y registro. Un 401 autenticado cierra la sesión; un 403 la conserva. Las respuestas antiguas no eliminan un token nuevo.
+
+Los tokens caducados, malformados o sin `exp` se rechazan. Un temporizador cierra la sesión al caducar incluso sin peticiones. Las pestañas sincronizan la sesión mediante `storage`. Si falla la validación de sesión se pide volver a entrar. El botón de logout llama a `POST /api/auth/logout` para revocar ese JWT y limpia la sesión local. Si el servidor no responde, se informa de que no se ha podido confirmar la revocación, aunque la sesión local queda cerrada. No hay refresh token. La autorización definitiva sigue en el backend.
+
+La gestión de usuarios pagina de 50 en 50 en el servidor; búsqueda y filtros afectan a la página cargada. Se envía `password`, nunca un hash. `status` es una etiqueta; el acceso depende de `isActive` y `deletedAt`. Los eliminados no admiten edición/restauración. Para editar un inactivo hay que reactivarlo, conforme al backend. Los conflictos con organizadores o roles muestran el mensaje de la API.
 
 ## Instalación y ejecución
 
@@ -46,17 +58,24 @@ npm install
 npm start
 ```
 
-Abre `http://localhost:4200`. La URL base de la API se cambia en `src/environments/environment.ts` y `src/environments/environment.development.ts`.
+Abre `http://localhost:4200`. La URL base de la API se cambia en `src/environments/environment.ts` y `src/environments/environment.development.ts`; permite ese origen en el CORS del backend. Necesitas una cuenta existente: el registro público crea USER y el README del backend explica cómo preparar el primer ADMIN. No se incluyen credenciales de administrador en el frontend.
 
 ## Endpoints usados
 
 | Acción | Método y ruta |
 | --- | --- |
+| Login / sesión | `POST /api/auth/login`, `GET /api/auth/me` |
+| Perfil propio | `GET/PATCH /api/profiles/me` |
+| Usuarios | `GET/POST /api/users`, `PATCH /api/users/:id` |
+| Activación de usuario | `PATCH /api/users/:id/active` con `{ isActive }` |
+| Softdelete de usuario | `PATCH /api/users/:id/softdelete` |
 | Listar | `GET /api/experiences` |
 | Consultar | `GET /api/experiences/slug/:slug` |
 | Crear | `POST /api/experiences` |
 | Editar | `PATCH /api/experiences/:id` |
 | Activar/desactivar | `PATCH /api/experiences/:id/activate` y `/deactivate` |
-| Borrado lógico | `DELETE /api/experiences/:id` |
+| Borrado lógico | `PATCH /api/experiences/:id/delete` |
 
-El frontend gestiona carga, lista vacía, errores de conexión y errores devueltos por la API. No incluye autenticación, reservas, pagos, favoritos ni funcionalidades que el backend todavía no ofrece.
+## Verificación
+
+`npm test` ejecuta las pruebas de autenticación con el cliente HTTP e interceptor reales de Angular y un backend HTTP simulado, sin modificar PostgreSQL. Cubren signals, persistencia, restauración, caducidad, roles, guards, errores 401/403, respuestas concurrentes y destinos del token. `npm run build` comprueba TypeScript y todas las plantillas Angular.
