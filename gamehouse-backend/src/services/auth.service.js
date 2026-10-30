@@ -16,7 +16,7 @@ const register = async (data) => {
     const created = await users.create(client, data.email, passwordHash);
     const profile = await profiles.create(client, created.id, data);
     const user = await users.findById(created.id, client);
-    const token = signToken(user);
+    const token = signToken({ id: user.id, role: user.role });
     await client.query('COMMIT');
     return { user, profile, token };
   } catch (error) {
@@ -37,7 +37,8 @@ const login = async ({ email, password }) => {
   if (!await users.recordLogin(credentials.id)) throw new AppError('Invalid email or password', 401);
   const user = await users.findById(credentials.id);
   if (!user) throw new AppError('Invalid email or password', 401);
-  return { user, token: signToken(user) };//role
+  const token = signToken({ id: user.id, role: user.role });
+  return { user, token };
 };
 
 module.exports = { register, login };

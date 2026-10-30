@@ -86,7 +86,7 @@ Genera `JWT_SECRET` con `node -e "console.log(require('crypto').randomBytes(48).
 
 - Registro: email, password de 12 a 128 caracteres y, opcionalmente, firstName, lastName, phone y avatarUrl. Rechaza campos adicionales, incluido role. Siempre crea USER.
 - Login: devuelve `data.token` y `data.user`. Las contraseñas nuevas usan Argon2id; un login correcto con bcrypt antiguo actualiza el hash. No se devuelven hashes.
-- Enviar `Authorization: Bearer <token>` en las rutas protegidas. JWT usa HS256, emisor y audiencia fijos, subject UUID y expiración obligatoria. El rol se consulta en PostgreSQL en cada petición; eliminar el usuario invalida sus tokens.
+- Enviar `Authorization: Bearer <token>` en las rutas protegidas. JWT usa HS256, emisor y audiencia fijos, subject UUID y expiración obligatoria. El payload incluye `role` (USER o ADMIN) al emitir el token. Para comprobar permisos se consulta el rol actual en PostgreSQL en cada petición; eliminar el usuario invalida sus tokens.
 - USER consulta y modifica su perfil. ADMIN accede a cualquier perfil y a `/api/users`. `:id` en perfiles identifica el perfil, no el usuario.
 - Las lecturas de catálogos siguen disponibles. Las escrituras de eventos, categorías, organizadores, lugares y asignaciones, la creación de experiencias y todas las rutas de roles requieren ADMIN.
 - Editar, activar, desactivar o eliminar una experiencia requiere ADMIN o que `experiences.host_id` apunte a un organizador cuyo `hosts.user_id` sea el usuario autenticado. Solo ADMIN puede cambiar el organizador.

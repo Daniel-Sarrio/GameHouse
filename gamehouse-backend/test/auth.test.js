@@ -78,7 +78,7 @@ test('registro crea USER y perfil con UUID y hash Argon2id', async () => {
   const payload = jwt.decode(alice.token);
   assert.equal(payload.sub, alice.user.id);
   assert.equal(payload.exp - payload.iat, 3600);
-  assert.equal(payload.role, undefined);
+  assert.equal(payload.role, 'USER');
   assert.equal(payload.password, undefined);
 });
 
@@ -92,6 +92,10 @@ test('login correcto, contraseña incorrecta y correo inexistente', async () => 
   const ok = await request('POST', '/api/auth/login', { body: { email: 'ALICE@example.invalid', password } });
   assert.equal(ok.status, 200);
   assert.equal(ok.data.data.user.id, alice.user.id);
+  assert.equal(jwt.decode(ok.data.data.token).role, 'USER');
+  const adminLogin = await request('POST', '/api/auth/login', { body: { email: 'admin@example.invalid', password } });
+  assert.equal(adminLogin.status, 200);
+  assert.equal(jwt.decode(adminLogin.data.data.token).role, 'ADMIN');
   const bad = await request('POST', '/api/auth/login', { body: { email: 'alice@example.invalid', password: 'incorrect' } });
   const absent = await request('POST', '/api/auth/login', { body: { email: 'absent@example.invalid', password } });
   assert.equal(bad.status, 401);

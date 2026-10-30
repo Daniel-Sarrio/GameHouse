@@ -12,7 +12,7 @@ const issuer = 'gamehouse';
 const audience = 'gamehouse-api';
 
 module.exports = {
-  signToken: (user) => jwt.sign({}, secret, {
+  signToken: (user) => jwt.sign({ role: user.role }, secret, {
     algorithm: 'HS256', subject: user.id, expiresIn, issuer, audience,
   }),
   verifyToken: (token) => jwt.verify(token, secret, {
