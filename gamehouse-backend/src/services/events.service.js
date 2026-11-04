@@ -1,3 +1,5 @@
+const validateData = require('./utils/validate-data');
+const { createEventSchema, updateEventSchema } = require('../middleware/event-validation');
 const repo = require('../repos/events.repo');
 const AppError = require('./utils/app-error');
 const generateSku = require('./utils/sku');
@@ -62,11 +64,13 @@ const validateEvent = async (data) => {
   return options.experiences.find((item) => item.id === data.experienceId);
 };
 const createEvent = async (data) => {
+  data = validateData(createEventSchema, data);
   const experience = await validateEvent(data);
   // El servidor genera el SKU; el cliente no puede escribirlo manualmente.
   return save(async () => repo.create({ ...data, sku: await buildUniqueSku(experience.name) }));
 };
 const updateEvent = async (id, data) => {
+  data = validateData(updateEventSchema, data);
   const current = await getEventById(id);
   const merged = { ...current, ...data };
   const experience = await validateEvent(merged);

@@ -3,16 +3,18 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ProfileService } from '../../core/services/profile.service';
 import { AuthService } from '../../auth/auth.service';
 import { AuthStore } from '../../auth/auth.store';
+import { Avatar } from '../../shared/components/avatar/avatar';
 
 @Component({
   selector: 'app-profile-page',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, Avatar],
   template: `
     <section class="mx-auto max-w-3xl p-6 sm:p-10">
       <p class="text-xs font-bold uppercase tracking-widest text-indigo-600">Mi cuenta</p>
       <h1 class="mt-2 text-3xl font-bold">Mi perfil</h1>
       <p class="mb-8 mt-2 text-slate-500">Actualiza tus datos personales.</p>
       <div class="mb-6 rounded-2xl border border-slate-200 bg-white p-6">
+        <app-avatar [url]="auth.user()?.avatarUrl" [name]="auth.user()?.name || auth.user()?.email || 'Usuario'" />
         <strong>{{ auth.user()?.email }}</strong
         ><span class="ml-3 rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">{{
           auth.user()?.role

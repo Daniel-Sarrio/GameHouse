@@ -1,3 +1,5 @@
+const validateData = require('./utils/validate-data');
+const { assignmentSchema } = require('../middleware/assignment-validation');
 const repo = require('../repos/assignments.repo');
 const experiencesRepo = require('../repos/experiences.repo');
 const categoriesRepo = require('../repos/categories.repo');
@@ -24,10 +26,12 @@ const save = async (action) => {
   }
 };
 const createAssignment = async (data) => {
+  data = validateData(assignmentSchema, data);
   await validateReferences(data);
   return save(() => repo.create(data));
 };
 const updateAssignment = async (experienceId, categoryId, data) => {
+  data = validateData(assignmentSchema, data);
   await getAssignmentById(experienceId, categoryId);
   await validateReferences(data);
   const assignment = await save(() => repo.update(experienceId, categoryId, data));

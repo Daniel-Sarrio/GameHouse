@@ -1,3 +1,5 @@
+const validateData = require('./utils/validate-data');
+const { createHostSchema, updateHostSchema } = require('../middleware/host-validation');
 const repo = require('../repos/hosts.repo');
 const AppError = require('./utils/app-error');
 const generateSlug = require('./utils/slug');
@@ -27,10 +29,12 @@ const save = async (action) => {
     throw error;
   }
 };
-const createHost = async (data) => save(async () => repo.create({
-  ...data, slug: await buildUniqueSlug(data.name),
-}));
+const createHost = async (data) => {
+  data = validateData(createHostSchema, data);
+  return save(async () => repo.create({ ...data, slug: await buildUniqueSlug(data.name) }));
+};
 const updateHost = async (id, data) => {
+  data = validateData(updateHostSchema, data);
   await getHostById(id);
   const changes = { ...data };
   if (data.name) changes.slug = await buildUniqueSlug(data.name, id);

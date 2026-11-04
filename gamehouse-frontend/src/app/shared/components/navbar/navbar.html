@@ -29,6 +29,10 @@
     </a>
     }
   </nav>
+  <div class="mx-4 mb-4 flex items-center gap-3 rounded-xl border border-slate-100 p-3">
+    <app-avatar [url]="auth.user()?.avatarUrl" [name]="auth.user()?.name || auth.user()?.email || 'Usuario'" />
+    <span class="min-w-0 break-all text-sm font-semibold">{{ auth.user()?.name || auth.user()?.email }}</span>
+  </div>
 
   @if (auth.isAdmin()) {
   <div class="mx-4 mb-6 hidden rounded-2xl border border-indigo-100 bg-indigo-50 p-4 lg:block">

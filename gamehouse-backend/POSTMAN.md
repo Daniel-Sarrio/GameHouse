@@ -4,7 +4,7 @@ La experiencia es genérica y puede reutilizarse en varios eventos.
 
 ## Autenticación
 
-Usa una variable `baseUrl` con valor `http://localhost:3000`. Para peticiones JSON selecciona Body → raw → JSON. Las operaciones administrativas de los ejemplos posteriores requieren un token ADMIN.
+Usa una variable `baseUrl` con valor `http://localhost:3000`. Para peticiones JSON selecciona Body → raw → JSON. Las operaciones administrativas de los ejemplos posteriores requieren una sesión ADMIN. Postman conserva la cookie del servidor. Añade `X-Requested-With: XMLHttpRequest` a las escrituras con cookie.
 
 ### Registro
 
@@ -21,12 +21,11 @@ Usa una variable `baseUrl` con valor `http://localhost:3000`. Para peticiones JS
 }
 ```
 
-Devuelve 201 con `data.user`, `data.profile` y `data.token`. En Scripts → Post-response puedes guardar las variables:
+Devuelve 201 con `data.user`, `data.profile` y `data.expiresAt`, además de una cookie HttpOnly. En Scripts → Post-response puedes guardar las variables:
 
 ```javascript
 if (pm.response.code === 201) {
-  const { user, profile, token } = pm.response.json().data;
-  pm.environment.set('token', token);
+  const { user, profile } = pm.response.json().data;
   pm.environment.set('userId', user.id);
   pm.environment.set('profileId', profile.id);
 }
@@ -45,17 +44,13 @@ Repetir el email devuelve 409. Añadir `"role": "ADMIN"` devuelve 400 y no crea 
 }
 ```
 
-Devuelve 200 con `data.token` y `data.user`; credenciales incorrectas devuelven 401. Guarda `data.token` en la variable `token`. Para las siguientes peticiones usa Authorization → Bearer Token → `{{token}}`.
+Devuelve 200 con `data.user` y `data.expiresAt`; credenciales incorrectas devuelven 401. El JWT se envía exclusivamente en `Set-Cookie`, no en JSON. Deja que Postman gestione la cookie para las siguientes peticiones.
 
 ### Cerrar sesión
 
-Envía `POST {{baseUrl}}/api/auth/logout` con Authorization → Bearer Token → `{{token}}`. No necesita cuerpo. Devuelve 200 con `success: true` y `data.message`. El token presentado queda revocado; reutilizarlo en una ruta protegida devuelve 401, incluso tras reiniciar el backend. Otras sesiones siguen siendo válidas.
+Envía `POST {{baseUrl}}/api/auth/logout` con la cookie de sesión y `X-Requested-With: XMLHttpRequest`. No necesita cuerpo. Devuelve 200 con `success: true` y `data.message`. El token presentado queda revocado; reutilizarlo en una ruta protegida devuelve 401, incluso tras reiniciar el backend. Otras sesiones siguen siendo válidas.
 
-Después de una respuesta correcta, elimina el token de Postman:
-
-```js
-if (pm.response.code === 200) pm.environment.unset('token');
-```
+La respuesta elimina la cookie automáticamente.
 
 ### Usuario y perfil propios
 
@@ -89,7 +84,7 @@ Un token USER recibe 403 en las rutas administrativas. Los hashes nunca aparecen
 
 ## Gestión completa de usuarios (ADMIN)
 
-La ruta base es `{{baseUrl}}/api/users` y todos estos ejemplos usan Bearer `{{token}}` de un ADMIN.
+La ruta base es `{{baseUrl}}/api/users` y todos estos ejemplos usan la cookie de sesión de un ADMIN.
 
 ```http
 GET {{baseUrl}}/api/users?limit=50&offset=0
@@ -135,7 +130,7 @@ Desactivar un usuario con organizadores activos devuelve 409. Eliminarlo con cua
 
 ## Eliminar conservando los datos
 
-Usa Bearer Token con permisos sobre el recurso y Body JSON `{}`:
+Usa la cookie de sesión con permisos sobre el recurso, `X-Requested-With: XMLHttpRequest` y Body JSON `{}`:
 
 ```http
 PATCH {{baseUrl}}/api/events/1/delete

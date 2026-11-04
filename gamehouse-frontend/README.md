@@ -41,11 +41,15 @@ Las páginas coordinan UI y routing. Los stores mantienen el estado con Angular 
 
 ## Autenticación y RBAC
 
-`AuthStore` expone `user`, `token`, `isAuthenticated`, `isAdmin`, `roles`, `login(session)`, `logout()` y `hasRole(role)`. `AuthService` ofrece `login(credentials)`, `logout()`, `restoreSession()` y `validateSession()`; se ocupa de HTTP y sincronizar el store, sin routing ni lógica de UI.
+`AuthStore` expone `user`, `isAuthenticated`, `isAdmin`, `roles`, `login(session)`, `logout()` y `hasRole(role)`. `AuthService` ofrece `login(credentials)`, `logout()`, `restoreSession()` y `validateSession()`; se ocupa de HTTP y sincronizar el store, sin routing ni lógica de UI.
 
-El token se persiste en localStorage bajo `gamehouse.auth.token`. Antes de autorizar una ruta se consulta `/auth/me`, cuya respuesta es directamente `data: user`. Los permisos usan el rol actual de esa respuesta, no un usuario persistido ni el rol antiguo del JWT. El interceptor envía Bearer solo a la API configurada, excluyendo login y registro. Un 401 autenticado cierra la sesión; un 403 la conserva. Las respuestas antiguas no eliminan un token nuevo.
+El servidor guarda el JWT en una cookie HttpOnly: JavaScript no puede leerlo. El interceptor de auth utiliza `withCredentials: true` solo para la API configurada, también al iniciar sesión. Se conserva el interceptor de peticiones existente, que añade `X-Requested-With: XMLHttpRequest`. No se guarda el token en localStorage; al arrancar se elimina únicamente la clave heredada de versiones anteriores.
 
-Los tokens caducados, malformados o sin `exp` se rechazan. Un temporizador cierra la sesión al caducar incluso sin peticiones. Las pestañas sincronizan la sesión mediante `storage`. Si falla la validación de sesión se pide volver a entrar. El botón de logout llama a `POST /api/auth/logout` para revocar ese JWT y limpia la sesión local. Si el servidor no responde, se informa de que no se ha podido confirmar la revocación, aunque la sesión local queda cerrada. No hay refresh token. La autorización definitiva sigue en el backend.
+Al arrancar o pulsar F5, el inicializador espera a `GET /auth/me` antes de mostrar rutas privadas. La respuesta mantiene `data: user` e incluye `expiresAt` en milisegundos. Los guards ya existentes siguen validando la sesión en el servidor. El backend comprueba la firma, expiración, blacklist, usuario activo y coincidencia del rol del JWT con el rol vigente. Cambiar de rol exige iniciar sesión de nuevo.
+
+Un temporizador cierra el estado local al caducar. Las pestañas notifican cambios mediante BroadcastChannel y revalidan al recuperar el foco. Un 401 cierra la sesión; un 403 la conserva. Logout revoca el JWT en la blacklist existente y elimina la cookie. Si falla la red se informa de que la revocación no pudo confirmarse. No hay refresh token.
+
+El formulario de login está separado de la página en `shared/components/login-form`. El componente reutilizable `shared/components/avatar` muestra la imagen o iniciales si falta/falla. Navbar, cabecera y perfil leen el mismo AuthStore; guardar el perfil actualiza el avatar mediante la revalidación existente, sin F5.
 
 La gestión de usuarios pagina de 50 en 50 en el servidor; búsqueda y filtros afectan a la página cargada. Se envía `password`, nunca un hash. `status` es una etiqueta; el acceso depende de `isActive` y `deletedAt`. Los eliminados no admiten edición/restauración. Para editar un inactivo hay que reactivarlo, conforme al backend. Los conflictos con organizadores o roles muestran el mensaje de la API.
 
@@ -78,4 +82,4 @@ Abre `http://localhost:4200`. La URL base de la API se cambia en `src/environmen
 
 ## Verificación
 
-`npm test` ejecuta las pruebas de autenticación con el cliente HTTP e interceptor reales de Angular y un backend HTTP simulado, sin modificar PostgreSQL. Cubren signals, persistencia, restauración, caducidad, roles, guards, errores 401/403, respuestas concurrentes y destinos del token. `npm run build` comprueba TypeScript y todas las plantillas Angular.
+`npm test` ejecuta las pruebas de autenticación con el cliente HTTP e interceptor reales de Angular y un backend HTTP simulado, sin modificar PostgreSQL. Cubren signals, persistencia, restauración, caducidad, roles, guards, errores 401/403, respuestas concurrentes y aislamiento de credenciales y actualización reactiva del avatar. `npm run build` comprueba TypeScript y todas las plantillas Angular.

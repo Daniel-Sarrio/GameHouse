@@ -1,4 +1,6 @@
 const profiles = require('../repos/profiles.repo');
+const validateData = require('./utils/validate-data');
+const { profileSchema } = require('./utils/auth-validation');
 const AppError = require('./utils/app-error');
 const { canAccessUserResource } = require('./utils/permissions');
 
@@ -9,6 +11,7 @@ const getProfile = async (user, id) => {
   return profile;
 };
 const updateProfile = async (user, id, data) => {
+  data = validateData(profileSchema, data);
   const profile = await getProfile(user, id);
   const updated = await profiles.update(profile.id, data);
   if (!updated) throw new AppError('Resource not found', 404);

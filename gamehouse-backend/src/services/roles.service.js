@@ -1,3 +1,5 @@
+const validateData = require('./utils/validate-data');
+const { roleSchema, updateRoleSchema } = require('../middleware/role-validation');
 const repo = require('../repos/roles.repo');
 const AppError = require('./utils/app-error');
 const Role = require('../models/role.model');
@@ -28,10 +30,12 @@ const save = async (action) => {
   }
 };
 const createRole = async (data) => {
+  data = validateData(roleSchema, data);
   validateRole(data);
   return save(() => repo.create(data));
 };
 const updateRole = async (id, data) => {
+  data = validateData(updateRoleSchema, data);
   validateRole(data);
   const current = await getRoleById(id);
   if (data.name !== undefined && data.name !== current.name && await usersRepo.countByRole(current.name)) {

@@ -1,28 +1,23 @@
-const { verifyToken } = require('../services/utils/jwt');
+const service = require('../services/auth.service');
+const { name, clearSessionCookie } = require('../services/utils/auth-cookie');
 const { rateLimit } = require('express-rate-limit');
-const users = require('../repos/users.repo');
-const auth = require('../repos/auth.repo');
 const AppError = require('../services/utils/app-error');
-const { z } = require('zod');
 
 const authenticate = async (req, res, next) => {
   const match = /^Bearer ([^\s]+)$/i.exec(req.get('authorization') || '');
-  if (!match) return next(new AppError('Authentication required', 401));
-  let payload;
+  const token = req.cookies?.[name] || match?.[1];
+  if (!token) return next(new AppError('Authentication required', 401));
   try {
-    payload = verifyToken(match[1]);
-    if (!z.uuid().safeParse(payload.sub).success || !Number.isFinite(payload.exp)) throw new Error('Invalid claims');
-  } catch {
-    return next(new AppError('Authentication required', 401));
-  }
-  try {
-    if (await auth.isTokenRevoked(match[1])) return next(new AppError('Authentication required', 401));
-    const user = await users.findById(payload.sub);
-    if (!user) return next(new AppError('Authentication required', 401));
+    const { user, expiresAt } = await service.validateSession(token);
     req.user = user;
-    req.auth = { token: match[1], expiresAt: new Date(payload.exp * 1000) };
+    req.auth = { token, expiresAt };
     return next();
-  } catch (error) { return next(error); }
+  } catch (error) {
+    // Un 401 de una petición antigua no debe borrar una cookie de login más reciente.
+    if (error.statusCode === 401 && req.cookies?.[name]
+      && req.baseUrl === '/api/auth' && req.path === '/logout') clearSessionCookie(res);
+    return next(error);
+  }
 };
 
 const createLimiter = (limit) => rateLimit({

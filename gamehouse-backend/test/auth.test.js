@@ -32,12 +32,15 @@ async function request(method, url, { token, body, headers = {} } = {}) {
   const data = await response.json();
   assert.equal(JSON.stringify(data).includes('password_hash'), false);
   assert.equal(JSON.stringify(data).includes('$argon2'), false);
-  return { status: response.status, data, headers: response.headers };
+  const cookie = response.headers.get('set-cookie');
+  const sessionToken = cookie?.match(/gamehouse_session=([^;]+)/)?.[1];
+  if (url === '/api/auth/login' || url === '/api/auth/register') assert.equal(data.data?.token, undefined);
+  return { status: response.status, data, headers: response.headers, token: sessionToken };
 }
 async function register(email, extra = {}) {
   const result = await request('POST', '/api/auth/register', { body: { email, password, firstName: 'Test', ...extra } });
   assert.equal(result.status, 201, JSON.stringify(result.data));
-  return result.data.data;
+  return { ...result.data.data, token: result.token };
 }
 
 before(async () => {
@@ -92,10 +95,11 @@ test('login correcto, contraseña incorrecta y correo inexistente', async () => 
   const ok = await request('POST', '/api/auth/login', { body: { email: 'ALICE@example.invalid', password } });
   assert.equal(ok.status, 200);
   assert.equal(ok.data.data.user.id, alice.user.id);
-  assert.equal(jwt.decode(ok.data.data.token).role, 'USER');
+  assert.equal(jwt.decode(ok.token).role, 'USER');
   const adminLogin = await request('POST', '/api/auth/login', { body: { email: 'admin@example.invalid', password } });
   assert.equal(adminLogin.status, 200);
-  assert.equal(jwt.decode(adminLogin.data.data.token).role, 'ADMIN');
+  assert.equal(jwt.decode(adminLogin.token).role, 'ADMIN');
+  admin.token = adminLogin.token;
   const bad = await request('POST', '/api/auth/login', { body: { email: 'alice@example.invalid', password: 'incorrect' } });
   const absent = await request('POST', '/api/auth/login', { body: { email: 'absent@example.invalid', password } });
   assert.equal(bad.status, 401);
@@ -125,7 +129,7 @@ test('RBAC usa el rol actual en BD; ADMIN lista y consulta usuarios', async () =
   assert.equal((await request('GET', `/api/users/${alice.user.id}`, { token: admin.token })).status, 200);
   assert.equal((await request('GET', `/api/users/${randomUUID()}`, { token: admin.token })).status, 404);
   await pool.query("UPDATE users SET role='USER' WHERE id=$1", [admin.user.id]);
-  assert.equal((await request('GET', '/api/users', { token: admin.token })).status, 403);
+  assert.equal((await request('GET', '/api/users', { token: admin.token })).status, 401);
   await pool.query("UPDATE users SET role='ADMIN' WHERE id=$1", [admin.user.id]);
 });
 
@@ -410,7 +414,7 @@ test('edición parcial: contraseña, correo, nombre y avatar; login actualiza la
   const login = await request('POST','/api/auth/login',{body:{email:'updated@example.invalid',password:newPassword}});
   assert.equal(login.status,200);
   assert.ok(login.data.data.user.lastLoginAt);
-  managedToken = login.data.data.token;
+  managedToken = login.token;
   assert.equal((await request('PATCH',url,{token:admin.token,body:{avatarImageUrl:'https://example.com/new.png'}})).status,200);
   assert.equal((await request('GET',url,{token:admin.token})).data.data.avatarUrl,'https://example.com/new.png');
 });
@@ -528,6 +532,69 @@ test('logout revoca solo el JWT presentado y conserva otras sesiones y la cuenta
   assert.equal((await service.me(current.id)).isActive, true);
   const session = await service.login({ email: 'admin@example.invalid', password });
   assert.equal((await request('GET', '/api/auth/me', { token: session.token })).status, 200);
+});
+
+test('cookie HttpOnly restaura sesión, permite CORS con credenciales y se revoca al salir', async () => {
+  const login = await request('POST', '/api/auth/login', { body: { email: 'admin@example.invalid', password }, headers: { Origin: 'http://localhost:4200' } });
+  assert.equal(login.status, 200);
+  const setCookie = login.headers.get('set-cookie');
+  assert.match(setCookie, /HttpOnly/i);
+  assert.match(setCookie, /SameSite=Lax/i);
+  assert.match(setCookie, /Path=\/api/);
+  assert.equal(login.data.data.token, undefined);
+  assert.equal(login.headers.get('access-control-allow-credentials'), 'true');
+  const cookie = setCookie.split(';')[0];
+  const me = await request('GET', '/api/auth/me', { headers: { Cookie: cookie } });
+  assert.equal(me.data.data.id, admin.user.id);
+  assert.equal(me.data.expiresAt, jwt.decode(login.token).exp * 1000);
+  assert.equal((await request('POST', '/api/auth/logout', { headers: { Cookie: cookie } })).status, 403);
+  assert.equal((await request('POST', '/api/auth/logout', { headers: { Cookie: cookie, Origin: 'https://external.invalid', 'X-Requested-With': 'XMLHttpRequest' } })).status, 403);
+  const logout = await request('POST', '/api/auth/logout', { headers: { Cookie: cookie, 'X-Requested-With': 'XMLHttpRequest' } });
+  assert.equal(logout.status, 200);
+  assert.match(logout.headers.get('set-cookie'), /gamehouse_session=;/);
+  const stale = await request('GET', '/api/auth/me', { headers: { Cookie: cookie } });
+  assert.equal(stale.status, 401);
+  assert.equal(stale.headers.get('set-cookie'), null);
+  const repeatedLogout = await request('POST', '/api/auth/logout', { headers: { Cookie: cookie, 'X-Requested-With': 'XMLHttpRequest' } });
+  assert.equal(repeatedLogout.status, 401);
+  assert.match(repeatedLogout.headers.get('set-cookie'), /gamehouse_session=;/);
+});
+
+test('producción emite cookie Secure y JWT sin rol o con identidad inexistente falla', async () => {
+  const { setSessionCookie } = require('../src/services/utils/auth-cookie');
+  const { signToken } = require('../src/services/utils/jwt');
+  const previous = process.env.NODE_ENV;
+  try {
+    process.env.NODE_ENV = 'production';
+    setSessionCookie({ cookie: (name, token, options) => {
+      assert.equal(options.secure, true);
+      assert.equal(options.httpOnly, true);
+    } }, signToken(admin.user));
+  } finally { if (previous === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = previous; }
+  for (const claims of [{ sub: alice.user.id }, { sub: randomUUID(), role: 'ADMIN' }, { sub: alice.user.id, role: 'HOST' }]) {
+    const token = jwt.sign(claims, process.env.JWT_SECRET, { expiresIn: '1h', issuer: 'gamehouse', audience: 'gamehouse-api' });
+    assert.equal((await request('GET', '/api/auth/me', { token })).status, 401);
+  }
+});
+
+test('servicios rechazan campos inválidos antes de acceder al repositorio', async () => {
+  const cases = [
+    ['auth', 'register', [{ email: 'invalid', password: 'short' }]],
+    ['auth', 'login', [{ email: 'invalid', password: '' }]],
+    ['users', 'createUser', [{ email: 'invalid', password: 'short', role: 'ROOT' }]],
+    ['users', 'updateUser', [admin.user.id, { status: 'x'.repeat(31) }]],
+    ['profiles', 'updateProfile', [admin.user, 'me', { avatarUrl: 'javascript:alert(1)' }]],
+    ['categories', 'createCategory', [{ name: '' }]],
+    ['hosts', 'updateHost', [1, { email: 'invalid' }]],
+    ['locations', 'updateLocation', [1, { city: '' }]],
+    ['experiences', 'updateExperience', [1, { categoryIds: [0] }]],
+    ['events', 'updateEvent', [1, { price: -1, capacity: 0 }]],
+    ['roles', 'updateRole', [1, { isActive: 'false' }]],
+    ['assignments', 'createAssignment', [{ experienceId: -1, categoryId: 1 }]],
+  ];
+  for (const [name, method, args] of cases) {
+    await assert.rejects(async () => require(`../src/services/${name}.service`)[method](...args), error => error.statusCode === 400, name);
+  }
 });
 
 test('login y registro limitan intentos por separado', async () => {

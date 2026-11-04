@@ -1,3 +1,5 @@
+const validateData = require('./utils/validate-data');
+const { createCategorySchema, updateCategorySchema } = require('../middleware/category-validation');
 const repo = require('../repos/categories.repo');
 const AppError = require('./utils/app-error');
 const generateSlug = require('./utils/slug');
@@ -27,10 +29,12 @@ const save = async (action) => {
     throw error;
   }
 };
-const createCategory = async (data) => save(async () => repo.create({
-  ...data, slug: await buildUniqueSlug(data.name),
-}));
+const createCategory = async (data) => {
+  data = validateData(createCategorySchema, data);
+  return save(async () => repo.create({ ...data, slug: await buildUniqueSlug(data.name) }));
+};
 const updateCategory = async (id, data) => {
+  data = validateData(updateCategorySchema, data);
   await getCategoryById(id);
   const changes = { ...data };
   if (data.name) changes.slug = await buildUniqueSlug(data.name, id);

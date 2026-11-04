@@ -1,3 +1,5 @@
+const validateData = require('./utils/validate-data');
+const { createExperienceSchema, updateExperienceSchema } = require('../middleware/experience-validation');
 const experiencesRepo = require('../repos/experiences.repo');
 const AppError = require('./utils/app-error');
 const generateSlug = require('./utils/slug');
@@ -28,10 +30,12 @@ const save = async (action) => {
     throw error;
   }
 };
-const createExperience = async (data) => save(async () => experiencesRepo.create({
-  ...data, slug: await buildUniqueSlug(data.name),
-}));
+const createExperience = async (data) => {
+  data = validateData(createExperienceSchema, data);
+  return save(async () => experiencesRepo.create({ ...data, slug: await buildUniqueSlug(data.name) }));
+};
 const updateExperience = async (id, data) => {
+  data = validateData(updateExperienceSchema, data);
   // ID: debe identificar una experiencia existente y no eliminada.
   await getExperienceById(id);
   // Campos: lugar, precio, capacidad, duración y fechas pertenecen a events.

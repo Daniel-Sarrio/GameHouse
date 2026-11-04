@@ -18,7 +18,7 @@ export interface AuthUser {
 
 export interface AuthSession {
   user: AuthUser;
-  token: string;
+  expiresAt: number;
 }
 export interface LoginCredentials {
   email: string;

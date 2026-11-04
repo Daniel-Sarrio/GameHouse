@@ -3,6 +3,7 @@ import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   PendingTasks,
+  computed,
   createEnvironmentInjector,
   runInInjectionContext,
   ɵINJECTOR_SCOPE,
@@ -19,11 +20,13 @@ import { firstValueFrom } from 'rxjs';
 import { AuthStore } from '../src/app/auth/auth.store';
 import { AuthService } from '../src/app/auth/auth.service';
 import { authInterceptor } from '../src/app/auth/auth.interceptor';
+import { requestInterceptor } from '../src/app/core/interceptors/request.interceptor';
 import { authGuard } from '../src/app/auth/auth.guard';
 import { adminGuard } from '../src/app/auth/admin.guard';
-import { AUTH_STORAGE_KEY, safeReturnUrl, tokenExpiresAt } from '../src/app/auth/auth.utils';
+import { safeReturnUrl } from '../src/app/auth/auth.utils';
 import { environment } from '../src/environments/environment';
 import { AuthUser } from '../src/app/auth/auth.models';
+import { ProfilePage } from '../src/app/features/profile/profile.page';
 
 const storage = new Map<string, string>();
 Object.defineProperty(globalThis, 'localStorage', {
@@ -33,8 +36,7 @@ Object.defineProperty(globalThis, 'localStorage', {
     removeItem: (key: string) => storage.delete(key),
   },
 });
-const token = (seconds = 3600, role = 'USER') =>
-  `header.${Buffer.from(JSON.stringify({ sub: 'user-id', role, exp: Date.now() / 1000 + seconds })).toString('base64url')}.signature`;
+const expires = (seconds = 3600) => Date.now() + seconds * 1000;
 const user = (role: 'USER' | 'ADMIN' = 'USER') =>
   ({
     id: 'user-id',
@@ -53,7 +55,7 @@ function setup() {
       AuthService,
       // Estas pruebas ejercitan HTTP y signals sin un árbol de componentes que renderizar.
       { provide: PendingTasks, useValue: { add: () => () => {} } },
-      provideHttpClient(withInterceptors([authInterceptor])),
+      provideHttpClient(withInterceptors([requestInterceptor, authInterceptor])),
       provideHttpClientTesting(),
       {
         provide: Router,
@@ -79,166 +81,162 @@ afterEach(() => {
   storage.clear();
 });
 
-test('store expone signals, roles y sesión persistente sin contraseñas', () => {
+test('store expone usuario y roles sin almacenar ni exponer JWT', () => {
   const { store } = setup();
-  store.login({ user: user('ADMIN'), token: token() });
+  store.login({ user: user('ADMIN'), expiresAt: expires() });
   assert.equal(store.isAuthenticated(), true);
   assert.equal(store.isAdmin(), true);
   assert.deepEqual(store.roles(), ['ADMIN']);
   assert.equal(store.hasRole('admin'), true);
   assert.equal(store.hasRole('HOST'), false);
-  assert.equal(storage.size, 1);
+  assert.equal('token' in store, false);
+  assert.equal(storage.size, 0);
   store.logout();
-  assert.equal(store.token(), null);
   assert.equal(store.user(), null);
-  assert.equal(storage.size, 0);
 });
-test('tokens caducados, malformados y sin exp se rechazan', () => {
+
+test('sesiones caducadas, sin expiración o de usuarios desactivados se rechazan', () => {
   const { store } = setup();
-  for (const value of [token(-1), 'invalid', 'header.e30.signature']) {
-    storage.set(AUTH_STORAGE_KEY, value);
-    store.restoreToken();
-    assert.equal(store.token(), null);
+  for (const expiresAt of [expires(-1), NaN, undefined]) {
+    assert.throws(() => store.login({ user: user(), expiresAt: expiresAt as number }));
+    assert.equal(store.isAuthenticated(), false);
   }
-  assert.equal(tokenExpiresAt('broken'), 0);
+  assert.throws(() => store.login({ user: { ...user(), isActive: false }, expiresAt: expires() }));
 });
-test('caducidad cierra la sesión sin esperar a otra petición', async () => {
+
+test('caducidad cierra sesión incluso sin peticiones', async () => {
   const { store } = setup();
-  store.login({ user: user(), token: token(0.04) });
-  await new Promise((resolve) => setTimeout(resolve, 70));
+  store.login({ user: user(), expiresAt: expires(0.04) });
+  await new Promise(resolve => setTimeout(resolve, 70));
   assert.equal(store.isAuthenticated(), false);
-  assert.equal(storage.size, 0);
 });
-test('restaurar consulta /auth/me y usa el rol actual del servidor', async () => {
+
+test('F5 restaura desde cookie mediante /me sin token en memoria ni localStorage', async () => {
   const { store, service, controller } = setup();
-  const jwt = token(3600, 'ADMIN');
-  storage.set(AUTH_STORAGE_KEY, jwt);
+  storage.set('gamehouse.auth.token', 'legacy-token');
   const restore = service.restoreSession();
   assert.equal(store.isAuthenticated(), false);
   const request = controller.expectOne(`${environment.apiUrl}/auth/me`);
-  assert.equal(request.request.headers.get('Authorization'), `Bearer ${jwt}`);
-  request.flush({ success: true, data: user('USER') });
+  assert.equal(request.request.withCredentials, true);
+  assert.equal(request.request.headers.has('Authorization'), false);
+  request.flush({ success: true, data: user('ADMIN'), expiresAt: expires() });
   await restore;
-  assert.equal(store.isAuthenticated(), true);
-  assert.equal(store.isAdmin(), false);
+  assert.equal(store.isAdmin(), true);
+  assert.equal(storage.size, 0);
 });
+
 test('login sincroniza store y un 401 de credenciales no invalida otra sesión', async () => {
   const { store, service, controller } = setup();
-  const jwt = token();
   const login = service.login({ email: 'test@example.invalid', password: 'test-password' });
   const request = controller.expectOne(`${environment.apiUrl}/auth/login`);
-  assert.equal(request.request.headers.has('Authorization'), false);
-  request.flush({ success: true, data: { token: jwt, user: user() } });
+  assert.equal(request.request.withCredentials, true);
+  request.flush({ success: true, data: { user: user(), expiresAt: expires() } });
   await login;
-  assert.equal(store.token(), jwt);
   const failed = service.login({ email: 'test@example.invalid', password: 'wrong' });
-  controller
-    .expectOne(`${environment.apiUrl}/auth/login`)
-    .flush({}, { status: 401, statusText: 'Unauthorized' });
+  controller.expectOne(`${environment.apiUrl}/auth/login`).flush({}, { status: 401, statusText: 'Unauthorized' });
   await assert.rejects(failed);
-  assert.equal(store.token(), jwt);
+  assert.equal(store.isAuthenticated(), true);
 });
-test('interceptor añade JWT solo a la API propia', async () => {
-  const { store, http, controller } = setup();
-  const jwt = token();
-  store.login({ user: user(), token: jwt });
-  for (const url of [
-    `${environment.apiUrl}/users`,
-    'https://example.invalid/api/users',
-    `${environment.apiUrl}-other/users`,
-  ]) {
+
+test('interceptor envía credenciales solo a la API propia y conserva el header existente', async () => {
+  const { http, controller } = setup();
+  for (const url of [`${environment.apiUrl}/users`, 'https://external.invalid/api/users', `${environment.apiUrl}-other/users`]) {
     const response = firstValueFrom(http.get(url));
     const request = controller.expectOne(url);
-    assert.equal(
-      request.request.headers.get('Authorization'),
-      url === `${environment.apiUrl}/users` ? `Bearer ${jwt}` : null,
-    );
+    const own = url === `${environment.apiUrl}/users`;
+    assert.equal(request.request.withCredentials, own);
+    assert.equal(request.request.headers.get('X-Requested-With'), 'XMLHttpRequest');
+    assert.equal(request.request.headers.has('Authorization'), false);
     request.flush({});
     await response;
   }
 });
+
 test('401 invalida sesión; 403 mantiene autenticación', async () => {
   const { store, http, controller } = setup();
   for (const status of [403, 401]) {
-    store.login({ user: user(), token: token() });
+    store.login({ user: user(), expiresAt: expires() });
     const response = firstValueFrom(http.get(`${environment.apiUrl}/users`));
     controller.expectOne(`${environment.apiUrl}/users`).flush({}, { status, statusText: 'Denied' });
     await assert.rejects(response, HttpErrorResponse);
     assert.equal(store.isAuthenticated(), status === 403);
   }
 });
-test('401 de una petición antigua no borra un token nuevo', async () => {
+
+test('401 antiguo no elimina una nueva sesión', async () => {
   const { store, http, controller } = setup();
-  store.login({ user: user(), token: token() });
+  store.login({ user: user(), expiresAt: expires() });
   const response = firstValueFrom(http.get(`${environment.apiUrl}/users`));
   const request = controller.expectOne(`${environment.apiUrl}/users`);
-  const fresh = token(7200);
-  store.login({ user: user(), token: fresh });
+  store.login({ user: user('ADMIN'), expiresAt: expires() });
   request.flush({}, { status: 401, statusText: 'Unauthorized' });
   await assert.rejects(response);
-  assert.equal(store.token(), fresh);
+  assert.equal(store.isAdmin(), true);
 });
+
 test('restauración pendiente no revive una sesión cerrada', async () => {
   const { store, service, controller } = setup();
-  storage.set(AUTH_STORAGE_KEY, token());
   const restore = service.restoreSession();
   const request = controller.expectOne(`${environment.apiUrl}/auth/me`);
   const logout = service.logout();
-  controller.expectOne(`${environment.apiUrl}/auth/logout`).flush({ success: true, data: { message: 'Sesión cerrada.' } });
+  controller.expectOne(`${environment.apiUrl}/auth/logout`).flush({ success: true });
   await logout;
-  request.flush({ success: true, data: user() });
+  request.flush({ success: true, data: user(), expiresAt: expires() });
   await restore;
   assert.equal(store.isAuthenticated(), false);
 });
-test('logout envía Bearer al servidor y borra inmediatamente el estado local', async () => {
+
+test('logout envía cookie y limpia estado inmediatamente; tolera 401', async () => {
   const { store, service, controller } = setup();
-  const jwt = token();
-  store.login({ token: jwt, user: user() });
-  const result = service.logout();
-  const request = controller.expectOne(`${environment.apiUrl}/auth/logout`);
-  assert.equal(request.request.method, 'POST');
-  assert.equal(request.request.headers.get('Authorization'), `Bearer ${jwt}`);
-  assert.equal(store.isAuthenticated(), false);
-  assert.equal(storage.size, 0);
-  request.flush({ success: true, data: { message: 'Sesión cerrada.' } });
-  await result;
-});
-test('logout mantiene limpieza local ante fallo y tolera un token ya revocado', async () => {
-  const { store, service, controller } = setup();
-  for (const status of [503, 401]) {
-    store.login({ token: token(), user: user() });
+  for (const status of [200, 503, 401]) {
+    store.login({ user: user(), expiresAt: expires() });
     const result = service.logout();
-    controller.expectOne(`${environment.apiUrl}/auth/logout`).flush({}, { status, statusText: 'Error' });
-    if (status === 401) await result; else await assert.rejects(result);
+    const request = controller.expectOne(`${environment.apiUrl}/auth/logout`);
+    assert.equal(request.request.method, 'POST');
+    assert.equal(request.request.withCredentials, true);
     assert.equal(store.isAuthenticated(), false);
+    request.flush({}, { status, statusText: 'Result' });
+    if (status === 503) await assert.rejects(result); else await result;
   }
-  await service.logout();
-  controller.expectNone(`${environment.apiUrl}/auth/logout`);
 });
-test('guards: anónimo a login, USER sin acceso admin, ADMIN autorizado', async () => {
-  const { injector, store, controller } = setup();
+
+test('guards consultan al servidor: anónimo a login, USER denegado, ADMIN permitido', async () => {
+  const { injector, controller } = setup();
   const state = { url: '/usuarios' } as any;
-  const anonymous: any = await runInInjectionContext(injector, () => authGuard({} as any, state));
+  const guardedAnonymous = runInInjectionContext(injector, () => authGuard({} as any, state));
+  controller.expectOne(`${environment.apiUrl}/auth/me`).flush({}, { status: 401, statusText: 'Unauthorized' });
+  const anonymous: any = await guardedAnonymous;
   assert.deepEqual(anonymous.path, ['/login']);
   assert.equal(anonymous.extras.queryParams.returnUrl, '/usuarios');
   for (const role of ['USER', 'ADMIN'] as const) {
-    store.login({ token: token(), user: user(role) });
     const guarded = runInInjectionContext(injector, () => adminGuard({} as any, state));
-    controller
-      .expectOne(`${environment.apiUrl}/auth/me`)
-      .flush({ success: true, data: user(role) });
+    controller.expectOne(`${environment.apiUrl}/auth/me`).flush({ success: true, data: user(role), expiresAt: expires() });
     const result: any = await guarded;
-    if (role === 'ADMIN') assert.equal(result, true);
-    else assert.deepEqual(result.path, ['/sin-acceso']);
+    if (role === 'ADMIN') assert.equal(result, true); else assert.deepEqual(result.path, ['/sin-acceso']);
   }
 });
-test('returnUrl solo admite rutas internas y evita bucles de login', () => {
-  for (const url of [
-    'https://evil.invalid',
-    '//evil.invalid',
-    '/\\evil.invalid',
-    '/login?returnUrl=/login',
-  ])
+
+test('guardar perfil actualiza avatar reactivo del usuario sin recargar', async () => {
+  const { injector, store, controller } = setup();
+  store.login({ user: user(), expiresAt: expires() });
+  const avatar = computed(() => store.user()?.avatarUrl);
+  assert.equal(avatar(), undefined);
+  const page = runInInjectionContext(injector, () => new ProfilePage());
+  const profile = { firstName: 'Test', lastName: null, phone: null, avatarUrl: null };
+  controller.expectOne(`${environment.apiUrl}/profiles/me`).flush({ data: profile });
+  await new Promise(resolve => setTimeout(resolve, 0));
+  page.form.patchValue({ avatarUrl: 'https://example.invalid/avatar.png' });
+  const save = page.save();
+  controller.expectOne(`${environment.apiUrl}/profiles/me`).flush({ data: { ...profile, avatarUrl: page.form.getRawValue().avatarUrl } });
+  await new Promise(resolve => setTimeout(resolve, 0));
+  controller.expectOne(`${environment.apiUrl}/auth/me`).flush({ data: { ...user(), avatarUrl: 'https://example.invalid/avatar.png' }, expiresAt: expires() });
+  await save;
+  assert.equal(avatar(), 'https://example.invalid/avatar.png');
+  assert.equal(page.saved(), true);
+});
+
+test('returnUrl solo admite rutas internas y evita bucles', () => {
+  for (const url of ['https://evil.invalid', '//evil.invalid', '/\\evil.invalid', '/login?returnUrl=/login'])
     assert.equal(safeReturnUrl(url, '/dashboard'), '/dashboard');
   assert.equal(safeReturnUrl('/usuarios?estado=active', '/dashboard'), '/usuarios?estado=active');
 });

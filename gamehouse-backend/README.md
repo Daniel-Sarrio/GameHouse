@@ -85,10 +85,10 @@ Genera `JWT_SECRET` con `node -e "console.log(require('crypto').randomBytes(48).
 ## Autenticación y permisos
 
 - Registro: email, password de 12 a 128 caracteres y, opcionalmente, firstName, lastName, phone y avatarUrl. Rechaza campos adicionales, incluido role. Siempre crea USER.
-- Login: devuelve `data.token` y `data.user`. Las contraseñas nuevas usan Argon2id; un login correcto con bcrypt antiguo actualiza el hash. No se devuelven hashes.
-- `GET /api/auth/me` sigue el flujo ruta → controlador → servicio → repositorio y devuelve el usuario actual en `data`. `POST /api/auth/logout` requiere Bearer y revoca ese token en PostgreSQL, sin desactivar la cuenta ni cerrar otras sesiones. El cliente debe borrar su token local tras cerrar sesión. Cada JWT nuevo tiene un `jti` único, incluso en logins del mismo segundo.
+- Login: emite la cookie `gamehouse_session` HttpOnly y devuelve `data.user` y `data.expiresAt` (milisegundos); el JWT no aparece en el JSON. Las contraseñas nuevas usan Argon2id; un login correcto con bcrypt antiguo actualiza el hash. No se devuelven hashes.
+- `GET /api/auth/me` sigue el flujo ruta → controlador → servicio → repositorio y devuelve el usuario actual en `data`. `POST /api/auth/logout` utiliza la cookie y revoca ese token en PostgreSQL, sin desactivar la cuenta ni cerrar otras sesiones. El servidor elimina la cookie al cerrar sesión. Cada JWT nuevo tiene un `jti` único, incluso en logins del mismo segundo.
 - La migración `005_auth_logout.sql`, incluida en `npm run migrate:auth` y `npm run migrate`, crea `revoked_tokens`. Solo guarda la huella SHA-256 y la caducidad; las revocaciones sobreviven al reinicio del backend y se limpian cuando caducan durante posteriores cierres de sesión.
-- Enviar `Authorization: Bearer <token>` en las rutas protegidas. JWT usa HS256, emisor y audiencia fijos, subject UUID y expiración obligatoria. El payload incluye `role` (USER o ADMIN) al emitir el token. Para comprobar permisos se consulta el rol actual en PostgreSQL en cada petición; eliminar el usuario invalida sus tokens.
+- El navegador envía la cookie con `withCredentials: true`. Se conserva Bearer para clientes API existentes. CORS permite credenciales solo a los orígenes configurados; las escrituras con cookie requieren `X-Requested-With: XMLHttpRequest`. La cookie tiene `HttpOnly`, `SameSite=Lax`, `Path=/api` y `Secure` en producción (HTTPS obligatorio). Usa el mismo hostname para frontend y API en desarrollo, por ejemplo `localhost` en ambos. JWT usa HS256, emisor y audiencia fijos, subject UUID y expiración obligatoria. El payload incluye `role` (USER o ADMIN) al emitir el token. El servicio auth verifica el usuario activo y su rol activo en PostgreSQL en cada petición; si el rol del JWT ya no coincide se devuelve 401. Eliminar el usuario invalida sus tokens. El hash de contraseña ya se compara en el servicio auth mediante Argon2id/bcrypt; el rol no es una contraseña ni necesita hash propio.
 - USER consulta y modifica su perfil. ADMIN accede a cualquier perfil y a `/api/users`. `:id` en perfiles identifica el perfil, no el usuario.
 - Las lecturas de catálogos siguen disponibles. Las escrituras de eventos, categorías, organizadores, lugares y asignaciones, la creación de experiencias y todas las rutas de roles requieren ADMIN.
 - Editar, activar, desactivar o eliminar una experiencia requiere ADMIN o que `experiences.host_id` apunte a un organizador cuyo `hosts.user_id` sea el usuario autenticado. Solo ADMIN puede cambiar el organizador.
@@ -101,7 +101,7 @@ UPDATE users SET role = 'ADMIN', updated_at = CURRENT_TIMESTAMP
 WHERE lower(email) = lower('tu-correo@example.com');
 ```
 
-El cambio tiene efecto con el token existente. No hay credenciales ni administrador de ejemplo. El frontend deberá enviar el token en sus operaciones administrativas.
+Tras cambiar el rol hay que iniciar sesión de nuevo para emitir un JWT coherente con el rol actual. No hay credenciales ni administrador de ejemplo. El navegador envía la cookie en las operaciones administrativas.
 
 ## Borrado lógico
 

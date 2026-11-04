@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { LoginForm } from '../shared/components/login-form/login-form';
+import { LoginCredentials } from './auth.models';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from './auth.service';
 import { AuthStore } from './auth.store';
@@ -7,7 +8,7 @@ import { safeReturnUrl } from './auth.utils';
 
 @Component({
   selector: 'app-login-page',
-  imports: [ReactiveFormsModule],
+  imports: [LoginForm],
   template: `
     <main class="flex min-h-dvh items-center justify-center bg-slate-50 px-4 py-8 sm:p-8">
       <section
@@ -22,38 +23,7 @@ import { safeReturnUrl } from './auth.utils';
             Tu sesión ha terminado. Vuelve a iniciar sesión.
           </p>
         }
-        <form [formGroup]="form" (ngSubmit)="submit()" class="grid gap-6">
-          <label class="grid gap-3 text-base font-semibold"
-            >Correo electrónico
-            <input
-              class="min-w-0 rounded-xl border border-slate-300 px-4 py-4 text-base"
-              formControlName="email"
-              type="email"
-              autocomplete="username"
-              placeholder="nombre@ejemplo.com"
-            />
-          </label>
-          <label class="grid gap-3 text-base font-semibold"
-            >Contraseña
-            <input
-              class="min-w-0 rounded-xl border border-slate-300 px-4 py-4 text-base"
-              formControlName="password"
-              type="password"
-              autocomplete="current-password"
-            />
-          </label>
-          @if (form.invalid && form.touched) {
-            <p class="text-sm text-red-700" role="alert">
-              Introduce un correo válido y tu contraseña.
-            </p>
-          }
-          @if (error()) {
-            <p class="rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">{{ error() }}</p>
-          }
-          <button class="boton boton-primario mt-2 min-h-14 text-base" [disabled]="busy()">
-            {{ busy() ? 'Iniciando sesión…' : 'Entrar' }}
-          </button>
-        </form>
+        <app-login-form [busy]="busy()" [error]="error()" (credentialsSubmit)="submit($event)" />
       </section>
     </main>
   `,
@@ -65,22 +35,13 @@ export class LoginPage {
   readonly route = inject(ActivatedRoute);
   readonly busy = signal(false);
   readonly error = signal('');
-  readonly form = inject(FormBuilder).nonNullable.group({
-    email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.maxLength(128)]],
-  });
 
-  async submit(): Promise<void> {
+  async submit(credentials: LoginCredentials): Promise<void> {
     if (this.busy()) return;
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
     this.busy.set(true);
     this.error.set('');
     try {
-      const data = this.form.getRawValue();
-      await this.auth.login({ email: data.email.trim(), password: data.password });
+      await this.auth.login(credentials);
       if (!this.store.isAuthenticated()) return;
       await this.router.navigateByUrl(
         safeReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'), '/dashboard'),

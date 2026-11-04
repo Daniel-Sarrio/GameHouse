@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const experiencesRoutes = require('./routes/experiences.routes');
@@ -22,6 +23,7 @@ const app = express();
 
 const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:4200').split(',').map((value) => value.trim()).filter(Boolean);
 app.use(cors({
+  credentials: true,
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new AppError('Origin not allowed', 403));
@@ -32,6 +34,15 @@ app.use(cors({
 app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.json({ limit: '32kb' }));
+app.use(cookieParser());
+// Las escrituras con cookies requieren un header que un formulario externo no puede enviar.
+app.use((req, res, next) => {
+  if (req.cookies.gamehouse_session && !['GET', 'HEAD', 'OPTIONS'].includes(req.method)
+    && req.get('X-Requested-With') !== 'XMLHttpRequest') {
+    return next(new AppError('Invalid request origin', 403));
+  }
+  return next();
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/profiles', profilesRoutes);

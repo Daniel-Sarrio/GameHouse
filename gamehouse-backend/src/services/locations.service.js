@@ -1,3 +1,5 @@
+const validateData = require('./utils/validate-data');
+const { createLocationSchema, updateLocationSchema } = require('../middleware/location-validation');
 const repo = require('../repos/locations.repo');
 const AppError = require('./utils/app-error');
 
@@ -15,8 +17,9 @@ const save = async (action) => {
     throw error;
   }
 };
-const createLocation = (data) => save(() => repo.create(data));
+const createLocation = (data) => save(() => repo.create(validateData(createLocationSchema, data)));
 const updateLocation = async (id, data) => {
+  data = validateData(updateLocationSchema, data);
   const location = await save(() => repo.update(id, data));
   if (!location) throw new AppError('Lugar no encontrado.', 404);
   return location;

@@ -1,4 +1,6 @@
 const users = require('../repos/users.repo');
+const validateData = require('./utils/validate-data');
+const { createUserSchema, updateUserSchema } = require('./utils/users-validation');
 const AppError = require('./utils/app-error');
 const pool = require('../config/database');
 const profiles = require('../repos/profiles.repo');
@@ -43,6 +45,7 @@ const profileData = (body) => ({
   ...(body.avatarImageUrl === undefined ? {} : { avatarUrl: body.avatarImageUrl }),
 });
 const createUser = async (body) => {
+  body = validateData(createUserSchema, body);
   const passwordHash = await hashPassword(body.password);
   return transaction(async (client) => {
     await validateEmail(body.email, null, client);
@@ -53,6 +56,7 @@ const createUser = async (body) => {
   });
 };
 const updateUser = async (id, body) => {
+  body = validateData(updateUserSchema, body);
   validateId(id);
   if (!['name', 'email', 'password', 'role', 'roleId', 'status', 'avatarImageUrl'].some((field) => body[field] !== undefined)) {
     throw new AppError('No se ha enviado ningún campo válido para modificar.', 400);
