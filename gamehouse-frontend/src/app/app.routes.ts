@@ -5,13 +5,18 @@ import { adminGuard } from './auth/admin.guard';
 
 export const routes: Routes = [
   { path: 'login', title: 'Acceso · GameHouse', loadComponent: () => import('./auth/login.page').then(m => m.LoginPage) },
+  // Home y shop públicos. Si una URL no coincide aquí, el router prueba el panel privado.
+  {
+    path: '',
+    loadComponent: () => import('./layouts/shop-layout/shop-layout').then((m) => m.ShopLayout),
+    loadChildren: () => import('./features/shop/shop.routes').then((m) => m.SHOP_ROUTES),
+  },
   {
     path: '',
     component: MainLayout,
     canActivate: [authGuard],
     canActivateChild: [authGuard],
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', title: 'Dashboard · GameHouse', loadComponent: () => import('./features/dashboard/dashboard.page').then(m => m.DashboardPage) },
       { path: 'perfil', title: 'Mi perfil · GameHouse', loadComponent: () => import('./features/profile/profile.page').then(m => m.ProfilePage) },
       { path: 'usuarios', canActivate: [adminGuard], title: 'Usuarios · GameHouse', loadChildren: () => import('./features/users/users.routes').then(m => m.USERS_ROUTES) },

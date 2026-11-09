@@ -2,11 +2,11 @@ import { Component, inject } from '@angular/core';
 import { AuthStore } from '../../../auth/auth.store';
 import { Avatar } from '../avatar/avatar';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { LucideLayers, LucideTags, LucideUsers, LucideMapPin, LucideShield, LucideCalendarDays } from '@lucide/angular';
+import { LucideLayers, LucideTags, LucideUsers, LucideMapPin, LucideShield, LucideCalendarDays, LucideStore } from '@lucide/angular';
 
 @Component({
   selector: 'app-navbar',
-  imports: [RouterLink, RouterLinkActive, LucideLayers, LucideTags, LucideUsers, LucideMapPin, LucideShield, LucideCalendarDays, Avatar],
+  imports: [RouterLink, RouterLinkActive, LucideLayers, LucideTags, LucideUsers, LucideMapPin, LucideShield, LucideCalendarDays, LucideStore, Avatar],
   templateUrl: './navbar.html',
   styleUrl: './navbar.css',
 })

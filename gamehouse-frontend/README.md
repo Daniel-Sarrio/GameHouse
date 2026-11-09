@@ -4,7 +4,7 @@ Dashboard Angular conectado a la API Express + PostgreSQL de GameHouse. Sigue la
 
 ## Flujo de uso
 
-1. Inicia sesión en `/login`. La raíz redirige a `/dashboard`.
+1. La raíz `/` es el home público y `/tienda` el shop; no requieren sesión. Inicia sesión en `/login` para acceder a `/dashboard`.
 2. USER y ADMIN acceden a su dashboard y editan sus datos en `/perfil`.
 3. ADMIN accede a `/usuarios`, `/experiencias`, `/eventos`, `/categorias`, `/organizadores`, `/lugares` y `/roles`, incluidos detalles y formularios.
 4. El menú adapta sus opciones al rol. Un USER que intenta abrir un módulo de administración llega a `/sin-acceso`.
@@ -25,14 +25,16 @@ src/app/
 ├── features/
 │   ├── dashboard/       # inicio adaptado al rol
 │   ├── profile/         # perfil propio
+│   ├── shop/            # home, listado y detalle públicos (components + pages)
 │   ├── users/           # formulario y listado de administración
 │   └── experiences/
 │       ├── components/   # tarjeta, grid y formulario reactivo
 │       ├── pages/        # listado, detalle, creación y edición
 │       └── experiences.routes.ts
-├── layouts/main-layout/
+├── layouts/main-layout/  # panel privado
+├── layouts/shop-layout/  # home y shop públicos
 └── shared/
-    ├── components/       # navegación, spinner, skeleton, error y vacío
+    ├── components/       # navegación, spinner, skeleton, error, vacío, carrusel, filtros, búsqueda y paginación
     └── pages/            # página 404
 src/environments/          # URL y tiempo de espera de la API
 ```
@@ -53,6 +55,20 @@ El formulario de login está separado de la página en `shared/components/login-
 
 La gestión de usuarios pagina de 50 en 50 en el servidor; búsqueda y filtros afectan a la página cargada. Se envía `password`, nunca un hash. `status` es una etiqueta; el acceso depende de `isActive` y `deletedAt`. Los eliminados no admiten edición/restauración. Para editar un inactivo hay que reactivarlo, conforme al backend. Los conflictos con organizadores o roles muestran el mensaje de la API.
 
+## Home y shop
+
+- **Home (`/`)**: tres carruseles (categorías, organizadores y lugares) con `FacetCarousel` + `FacetCard`. Cada tarjeta enlaza a `/tienda?category=ID`, `?host=ID` o `?location=ID` (deep-linking).
+- **Shop (`/tienda`)**: `ExperienceList` + `ExperienceCard`, filtros (`ShopFiltersPanel` compone tres `FilterGroup`), búsqueda por nombre, orden y paginación. En móvil los filtros se pliegan.
+- **Detalle (`/tienda/:slug`)**: carrusel de imágenes, categorías, organizador, lugares y selector de departures (fecha de inicio y fin, lugar, plazas y precio). La departure elegida se guarda en `?fecha=ID`.
+
+La URL es la única fuente de verdad: `ShopPage` escucha `queryParamMap`, lo valida con `parseShopFilters` y llama a `ShopStore.loadExperiences`. Filtrar, buscar u ordenar navega con nuevos query params y vuelve a la página 1, así que recargar, compartir el enlace y atrás/adelante mantienen el estado. Los cambios de filtros usan `scroll: 'manual'` para no saltar arriba y la búsqueda usa `replaceUrl` para no llenar el historial.
+
+`ShopStore` (Signals) guarda facetas, filtros, resultados, paginación, carga y errores. Cada búsqueda aborta la anterior con `AbortController` (`ApiService.get` acepta `signal` y cancela la petición HTTP), y `SearchBox` aplica un debounce de 350 ms; Enter y limpiar emiten al momento. `ShopExperienceStore` gestiona el detalle y la departure seleccionada.
+
+Componentes reutilizables en `shared/components`: `Carousel` (scroll-snap, flechas e indicadores), `SearchBox`, `FilterGroup`, `Pagination` y `CoverImage` (degradado si la imagen falta o falla).
+
+**Reservas (fase posterior)**: `BookingPanel` ya muestra departure, plazas y total, con el botón deshabilitado. `ShopExperienceStore.bookingDraft` expone `{ experienceSlug, departureId, spots }` y el backend devuelve `availableSpots`: bastará con añadir el servicio de reservas, activar `bookingEnabled` y restar plazas ocupadas en el repositorio.
+
 ## Instalación y ejecución
 
 Inicia primero el backend en `http://localhost:3000`. Después, en `gamehouse-frontend`:
@@ -68,6 +84,7 @@ Abre `http://localhost:4200`. La URL base de la API se cambia en `src/environmen
 
 | Acción | Método y ruta |
 | --- | --- |
+| Home y shop | `GET /api/shop/categories`, `/hosts`, `/locations`, `/experiences?category=&host=&location=&search=&sort=&page=&limit=`, `/experiences/:slug`, `/experiences/:slug/departures` |
 | Login / sesión | `POST /api/auth/login`, `GET /api/auth/me` |
 | Perfil propio | `GET/PATCH /api/profiles/me` |
 | Usuarios | `GET/POST /api/users`, `PATCH /api/users/:id` |
