@@ -10,6 +10,7 @@
     "migrate:auth": "node migrate-auth.js",
     "migrate:soft-delete": "node migrate-soft-delete.js",
     "migrate:users": "node migrate-users.js",
+    "migrate:shop": "node migrate-shop.js",
     "test": "node --test --test-concurrency=1 test/*.test.js",
     "seed": "node migrate.js && node seed.js",
     "dev": "nodemon src/server.js"

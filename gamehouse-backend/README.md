@@ -62,6 +62,7 @@ Para una base vacía, aplica primero `database.sql` con tu cliente PostgreSQL. N
 | Roles | `/api/roles` |
 | Autenticación | `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout` |
 | Perfiles | `GET /api/profiles/me`, `PATCH /api/profiles/me`, `GET /api/profiles/:id`, `PATCH /api/profiles/:id` |
+| Shop (público) | `GET /api/shop/categories`, `GET /api/shop/hosts`, `GET /api/shop/locations`, `GET /api/shop/experiences`, `GET /api/shop/experiences/:slug`, `GET /api/shop/experiences/:slug/departures` |
 | Usuarios (ADMIN) | `GET /api/users`, `GET /api/users/active`, `GET /api/users/deleted`, `GET /api/users/:id`, `POST /api/users`, `PATCH /api/users/:id`, `PATCH /api/users/:id/active`, `PATCH /api/users/:id/softdelete` |
 
 Las respuestas correctas usan `{ "success": true, "data": ... }`. Los errores usan `{ "success": false, "message": "...", "errors": [] }`.
@@ -112,6 +113,17 @@ Se asigna `deleted_at` sin eliminar filas, imágenes ni referencias. Los registr
 Retirar una categoría de una experiencia también conserva la asignación con `deleted_at`. Volver a asignarla restaura esa fila, sin reactivar automáticamente sus eventos. Los nombres, slugs, SKU y demás claves únicas de registros eliminados siguen reservados; no hay pantalla de papelera/restauración general.
 
 Aplica `npm run migrate:soft-delete` para actualizar una base existente. También se incluye en `npm run migrate`; `database.sql` ya incorpora las columnas y triggers para instalaciones nuevas. El seed respeta los registros eliminados.
+
+## Shop público
+
+Las rutas `/api/shop` son públicas y de solo lectura (`route → ctrl → service → repo`). Solo muestran experiencias publicadas, activas, no eliminadas y con organizador activo. Una *departure* es un evento `scheduled`, activo, no eliminado y con inicio futuro.
+
+- `categories`, `hosts` y `locations` alimentan los carruseles del home y los filtros del shop. Solo devuelven elementos con al menos una experiencia visible e incluyen `experienceCount`. No exponen email ni teléfono de los organizadores.
+- `GET /api/shop/experiences` admite varios query params combinables: `category`, `host` y `location` (IDs; varios valores con `1,2` o repitiendo el parámetro; OR dentro de un filtro y AND entre filtros), `search` (nombre, máx. 100 caracteres), `sort` (`recent`, `name`, `price_asc`, `price_desc`, `date`), `page` y `limit` (1–48, por defecto 12). Los parámetros desconocidos devuelven 400. Responde `{ items, pagination: { page, limit, total, totalPages } }`.
+- `shop.repo.js` construye el `WHERE` dinámicamente con parámetros posicionales; el orden sale de una lista blanca y `%`/`_` se escapan en la búsqueda.
+- `GET /experiences/:slug` devuelve la experiencia con organizador, categorías, lugares, precio mínimo e imágenes para el carrusel. `/departures` lista sus salidas con fechas, precio, capacidad, lugar y `availableSpots`, preparado para restar plazas cuando exista el sistema de reservas.
+
+`migrations/006_shop_indexes.sql` (`npm run migrate:shop`, también incluido en `npm run migrate`) activa `pg_trgm` y crea índices parciales para la búsqueda por nombre, el orden por defecto, los filtros por organizador, categoría y lugar y las departures por fecha. `database.sql` ya los incluye.
 
 ## Gestión de usuarios en PostgreSQL
 

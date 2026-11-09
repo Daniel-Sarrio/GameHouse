@@ -15,6 +15,7 @@ const errorHandler = require('./middleware/error.middleware');
 const authRoutes = require('./routes/auth.routes');
 const profilesRoutes = require('./routes/profiles.routes');
 const userRoutes = require('./routes/user.routes');
+const shopRoutes = require('./routes/shop.routes');
 const { authenticate } = require('./middleware/authentication');
 const { adminWrites, authorizeRoles } = require('./middleware/authorization');
 const AppError = require('./services/utils/app-error');
@@ -55,6 +56,8 @@ app.use('/api/locations', adminWrites, locationsRoutes);
 app.use('/api/assignments', adminWrites, assignmentsRoutes);
 app.use('/api/roles', authenticate, authorizeRoles('ADMIN'), rolesRoutes);
 app.use('/api/events', adminWrites, eventsRoutes);
+// Shop público de solo lectura (home, listado y detalle).
+app.use('/api/shop', shopRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
