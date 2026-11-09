@@ -129,10 +129,6 @@ async function seed() {
       if (inserted.rowCount) createdExperiences++;
       const experience = inserted.rows[0] || (await client.query('SELECT id FROM experiences WHERE slug = $1 AND deleted_at IS NULL', [item.slug])).rows[0];
       if (!experience) continue;
-      // Galería para el carrusel del detalle del shop (la posición 0 es la imagen principal).
-      for (const position of [1, 2]) await client.query(
-        "INSERT INTO images (entity_type, entity_id, url, is_main, position) VALUES ('experiences', $1, $2, FALSE, $3) ON CONFLICT (entity_type, entity_id, position) DO NOTHING",
-        [experience.id, 'https://picsum.photos/seed/' + item.image + '-' + position + '/1200/800', position]);
       for (const categoryId of categoryIds) await client.query(
         'INSERT INTO experience_categories (experience_id, category_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',
         [experience.id, categoryId]);
