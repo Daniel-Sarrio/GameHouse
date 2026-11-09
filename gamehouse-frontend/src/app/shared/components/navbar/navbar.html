@@ -7,7 +7,6 @@
   <nav class="flex flex-1 flex-col gap-1 px-3 py-5" aria-label="Navegación de administración">
     <p class="px-3 pb-2 text-[11px] font-bold tracking-[.16em] text-slate-400 uppercase">Gestión</p>
     <a routerLink="/dashboard" routerLinkActive="active" class="nav-link flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-600"><svg lucideLayers [size]="19" aria-hidden="true"></svg> Dashboard</a>
-    <a routerLink="/tienda" class="nav-link flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-600"><svg lucideStore [size]="19" aria-hidden="true"></svg> Ver tienda</a>
     @if (auth.isAdmin()) {
     <a routerLink="/usuarios" routerLinkActive="active" class="nav-link flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-600"><svg lucideUsers [size]="19" aria-hidden="true"></svg> Usuarios</a>
     <a routerLink="/experiencias" routerLinkActive="active" class="nav-link flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-600">

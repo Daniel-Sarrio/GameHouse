@@ -6,10 +6,11 @@ import { AlertService } from '../../core/services/alert.service';
 import { Navbar } from '../../shared/components/navbar/navbar';
 import { Loader } from '../../shared/components/loader/loader';
 import { Avatar } from '../../shared/components/avatar/avatar';
+import { LucideStore } from '@lucide/angular';
 
 @Component({
   selector: 'app-main-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Navbar, Loader, Avatar],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Navbar, Loader, Avatar, LucideStore],
   template: `
     <div class="min-h-screen lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
       <app-navbar />
@@ -26,6 +27,8 @@ import { Avatar } from '../../shared/components/avatar/avatar';
               </span>
             </a>
             <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">{{ auth.user()?.role }}</span>
+            <!-- Acceso al home y la tienda públicos; el menú lateral queda solo para la gestión. -->
+            <a routerLink="/" class="boton boton-secundario"><svg lucideStore [size]="16" aria-hidden="true"></svg> Ver tienda</a>
             <button class="boton boton-secundario" (click)="logout()">Cerrar sesión</button>
           </div>
         </header>
