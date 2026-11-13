@@ -7,7 +7,7 @@ import { AuthStore } from '../../auth/auth.store';
   imports: [RouterLink],
   template: `
     <section class="p-6 sm:p-10">
-      <p class="text-xs font-bold uppercase tracking-widest text-indigo-600">
+      <p class="text-xs font-bold uppercase tracking-widest text-acento-texto">
         Tu espacio de trabajo
       </p>
       <h1 class="mt-3 text-3xl font-bold sm:text-4xl">
@@ -22,27 +22,27 @@ import { AuthStore } from '../../auth/auth.store';
       </p>
       @if (auth.isAdmin()) {
         <div
-          class="my-8 flex flex-wrap items-center justify-between gap-6 rounded-2xl bg-indigo-600 p-7 text-white"
+          class="my-8 flex flex-wrap items-center justify-between gap-6 rounded-2xl bg-acento p-7 text-white"
         >
           <div>
-            <p class="text-xs font-bold uppercase tracking-widest text-indigo-200">
+            <p class="text-xs font-bold uppercase tracking-widest text-white/70">
               Control de acceso
             </p>
             <h2 class="mt-2 text-2xl font-bold">Una comunidad bien organizada</h2>
-            <p class="mt-2 text-sm text-indigo-100">
+            <p class="mt-2 text-sm text-white/80">
               Crea cuentas, asigna roles y gestiona el acceso de tus usuarios.
             </p>
           </div>
-          <a routerLink="/usuarios" class="boton bg-white text-indigo-700">Gestionar usuarios →</a>
+          <a routerLink="/usuarios" class="boton bg-superficie text-indigo-700">Gestionar usuarios →</a>
         </div>
         <h2 class="mb-4 text-lg font-bold">Accesos de administración</h2>
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           @for (item of sections; track item.path) {
             <a
               [routerLink]="item.path"
-              class="group rounded-2xl border border-slate-200 bg-white p-6 no-underline transition hover:border-indigo-300 hover:shadow-sm"
+              class="group rounded-2xl border border-slate-200 bg-superficie p-6 no-underline transition hover:border-indigo-300 hover:shadow-sm"
               ><span
-                class="mb-4 grid h-10 w-10 place-items-center rounded-xl bg-indigo-50 text-lg font-bold text-indigo-600"
+                class="mb-4 grid h-10 w-10 place-items-center rounded-xl bg-indigo-50 text-lg font-bold text-acento-texto"
                 aria-hidden="true"
                 >{{ item.symbol }}</span
               >
@@ -54,7 +54,7 @@ import { AuthStore } from '../../auth/auth.store';
           }
         </div>
       } @else {
-        <section class="mt-8 rounded-2xl border border-slate-200 bg-white p-8">
+        <section class="mt-8 rounded-2xl border border-slate-200 bg-superficie p-8">
           <h2 class="text-xl font-bold">Tu perfil, siempre actualizado</h2>
           <p class="my-4 text-slate-500">
             Gestiona tu nombre, teléfono y avatar desde tu área personal.

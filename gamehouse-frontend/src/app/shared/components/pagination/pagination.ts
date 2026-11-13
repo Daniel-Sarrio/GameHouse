@@ -30,10 +30,10 @@ type PageItem = number | 'gap';
   styles: [`
     .page {
       display: inline-grid; place-items: center; min-width: 2.4rem; height: 2.4rem; padding: 0 .6rem;
-      border: 1px solid var(--borde); border-radius: 10px; background: #fff; color: var(--tinta);
+      border: 1px solid var(--borde); border-radius: 10px; background: var(--superficie); color: var(--tinta);
       font-size: .875rem; font-weight: 650;
     }
-    .page:hover:not(:disabled):not(.current) { background: #eff1f6; }
+    .page:hover:not(:disabled):not(.current) { background: var(--superficie-hover); }
     .page:disabled { opacity: .45; cursor: not-allowed; }
     .page.current { background: var(--azul); border-color: var(--azul); color: #fff; }
   `],

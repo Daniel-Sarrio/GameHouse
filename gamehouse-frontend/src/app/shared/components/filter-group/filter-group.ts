@@ -17,7 +17,7 @@ const VISIBLE_OPTIONS = 6;
       <legend class="mb-2 flex w-full items-center justify-between text-sm font-bold text-slate-900">
         {{ title() }}
         @if (selected().length) {
-          <button type="button" class="text-xs font-semibold text-indigo-600 hover:underline" (click)="selectedChange.emit([])">
+          <button type="button" class="text-xs font-semibold text-acento-texto hover:underline" (click)="selectedChange.emit([])">
             Quitar
           </button>
         }
@@ -29,7 +29,7 @@ const VISIBLE_OPTIONS = 6;
         @for (option of visibleOptions(); track option.id) {
           <li>
             <label class="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50">
-              <input type="checkbox" class="h-4 w-4 accent-indigo-600" [checked]="isSelected(option.id)" (change)="toggle(option.id)" />
+              <input type="checkbox" class="h-4 w-4 accent-acento" [checked]="isSelected(option.id)" (change)="toggle(option.id)" />
               <span class="min-w-0 flex-1">
                 <span class="block truncate">{{ option.label }}</span>
                 @if (option.hint) { <span class="block truncate text-xs text-slate-400">{{ option.hint }}</span> }
@@ -42,7 +42,7 @@ const VISIBLE_OPTIONS = 6;
         }
       </ul>
       @if (options().length > visibleLimit) {
-        <button type="button" class="mt-1 px-2 text-xs font-semibold text-indigo-600 hover:underline" (click)="expanded.update((value) => !value)">
+        <button type="button" class="mt-1 px-2 text-xs font-semibold text-acento-texto hover:underline" (click)="expanded.update((value) => !value)">
           {{ expanded() ? 'Ver menos' : 'Ver ' + (options().length - visibleLimit) + ' más' }}
         </button>
       }

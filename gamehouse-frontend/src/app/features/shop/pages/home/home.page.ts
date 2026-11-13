@@ -11,10 +11,10 @@ import { FacetCarousel } from '../../components/facet-carousel/facet-carousel';
   template: `
     <section class="hero">
       <div class="contenedor py-14 sm:py-20">
-        <p class="text-xs font-bold tracking-[.2em] text-indigo-200 uppercase">GameHouse</p>
+        <p class="text-xs font-bold tracking-[.2em] text-white/70 uppercase">GameHouse</p>
         <h1 class="mt-3 max-w-2xl text-4xl leading-tight font-black text-white sm:text-5xl">Vive experiencias gaming fuera de la pantalla</h1>
-        <p class="mt-4 max-w-xl text-indigo-100">Torneos, realidad virtual, simuladores y escape rooms. Elige categoría, organizador o lugar y reserva tu fecha.</p>
-        <a routerLink="/tienda" class="boton mt-8 bg-white text-indigo-700">Explorar experiencias →</a>
+        <p class="mt-4 max-w-xl text-white/80">Torneos, realidad virtual, simuladores y escape rooms. Elige categoría, organizador o lugar y reserva tu fecha.</p>
+        <a routerLink="/tienda" class="boton mt-8 bg-superficie text-indigo-700">Explorar experiencias →</a>
       </div>
     </section>
 

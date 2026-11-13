@@ -39,10 +39,10 @@ import { dateText, priceText, timeRangeText } from '../../../../core/utils/shop.
   styles: [`
     .option {
       display: flex; align-items: center; gap: 1rem; padding: 1rem 1.1rem; cursor: pointer;
-      border: 1.5px solid var(--borde); border-radius: 14px; background: #fff; transition: border-color .15s, box-shadow .15s;
+      border: 1.5px solid var(--borde); border-radius: 14px; background: var(--superficie); transition: border-color .15s, box-shadow .15s;
     }
-    .option:hover { border-color: #aab4f5; }
-    .option:has(input:focus-visible) { outline: 3px solid #8d9aff; outline-offset: 2px; }
+    .option:hover { border-color: var(--acento-borde); }
+    .option:has(input:focus-visible) { outline: 3px solid var(--enfoque); outline-offset: 2px; }
     .option.selected { border-color: var(--azul); box-shadow: 0 0 0 3px rgb(52 72 220 / .12); }
     .option.full { opacity: .55; cursor: not-allowed; }
   `],

@@ -31,7 +31,7 @@ interface ActiveChip {
     <section class="contenedor py-8 sm:py-10">
       <header class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p class="text-xs font-bold tracking-widest text-indigo-600 uppercase">Tienda</p>
+          <p class="text-xs font-bold tracking-widest text-acento-texto uppercase">Tienda</p>
           <h1 class="mt-1 text-3xl font-bold">Explora experiencias</h1>
           <p class="mt-1 text-sm text-slate-500" aria-live="polite">{{ resultsText() }}</p>
         </div>

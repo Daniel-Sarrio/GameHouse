@@ -24,7 +24,7 @@ const parseId = (value: string | undefined): number | null => {
   ],
   template: `
     <section class="contenedor py-8 sm:py-10">
-      <a routerLink="/tienda" [queryParams]="backQueryParams()" class="mb-6 inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 no-underline hover:underline">
+      <a routerLink="/tienda" [queryParams]="backQueryParams()" class="mb-6 inline-flex items-center gap-1.5 text-sm font-semibold text-acento-texto no-underline hover:underline">
         <svg lucideArrowLeft [size]="16" aria-hidden="true"></svg> Volver a la tienda
       </a>
 
@@ -92,7 +92,7 @@ const parseId = (value: string | undefined): number | null => {
               (departureSelect)="selectDeparture($event)" />
 
             @if (experience.host.description) {
-              <section class="rounded-2xl border border-slate-200 bg-white p-5">
+              <section class="rounded-2xl border border-slate-200 bg-superficie p-5">
                 <h2 class="m-0 text-base font-bold">Organiza {{ experience.host.name }}</h2>
                 <p class="mt-2 mb-0 text-sm text-slate-600">{{ experience.host.description }}</p>
               </section>

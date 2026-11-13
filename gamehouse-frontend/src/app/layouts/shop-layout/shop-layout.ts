@@ -3,24 +3,26 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { AuthStore } from '../../auth/auth.store';
 import { Avatar } from '../../shared/components/avatar/avatar';
 import { Loader } from '../../shared/components/loader/loader';
+import { ThemeToggle } from '../../shared/components/theme-toggle/theme-toggle';
 
 /** Layout público del home y del shop: no exige sesión, pero la reconoce si existe. */
 @Component({
   selector: 'app-shop-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Avatar, Loader],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Avatar, Loader, ThemeToggle],
   template: `
     <app-loader />
-    <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
+    <header class="sticky top-0 z-20 border-b border-slate-200 bg-superficie/90 backdrop-blur">
       <div class="contenedor flex items-center gap-4 py-3">
         <a routerLink="/" class="flex items-center gap-2.5 no-underline" aria-label="GameHouse, ir al inicio">
-          <span class="grid h-9 w-9 place-items-center rounded-xl bg-indigo-600 text-base font-black text-white">G</span>
+          <span class="grid h-9 w-9 place-items-center rounded-xl bg-acento text-base font-black text-white">G</span>
           <strong class="hidden text-base tracking-tight text-slate-900 sm:block">GameHouse</strong>
         </a>
+        <!-- El logo lleva al inicio; el menú solo enlaza a la tienda. -->
         <nav class="flex items-center gap-1" aria-label="Navegación principal">
-          <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page" class="nav-link">Inicio</a>
           <a routerLink="/tienda" routerLinkActive="active" ariaCurrentWhenActive="page" class="nav-link">Tienda</a>
         </nav>
         <div class="ml-auto flex items-center gap-2">
+          <app-theme-toggle />
           @if (auth.user(); as user) {
             <a routerLink="/dashboard" class="flex items-center gap-2 rounded-lg px-2 py-1 text-sm font-semibold text-slate-700 no-underline hover:bg-slate-100">
               <app-avatar [url]="user.avatarUrl" [name]="user.name || user.email" />
@@ -37,8 +39,8 @@ import { Loader } from '../../shared/components/loader/loader';
   `,
   styles: [`
     .nav-link { padding: .45rem .8rem; border-radius: 10px; font-size: .9rem; font-weight: 650; color: var(--suave); text-decoration: none; }
-    .nav-link:hover { background: #eff1f6; color: var(--tinta); }
-    .nav-link.active { background: #eef0ff; color: var(--azul); }
+    .nav-link:hover { background: var(--superficie-hover); color: var(--tinta); }
+    .nav-link.active { background: var(--acento-suave); color: var(--acento-texto); }
   `],
 })
 export class ShopLayout {

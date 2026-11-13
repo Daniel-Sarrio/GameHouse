@@ -10,7 +10,7 @@ import { FacetCard } from '../facet-card/facet-card';
   imports: [Carousel, FacetCard, RouterLink],
   template: `
     <app-carousel [label]="title()" [title]="title()" [subtitle]="subtitle()" itemWidth="min(15rem, 78vw)">
-      <a carouselAction routerLink="/tienda" class="mr-1 text-sm font-semibold text-indigo-600 no-underline hover:underline">Ver todo</a>
+      <a carouselAction routerLink="/tienda" class="mr-1 text-sm font-semibold text-acento-texto no-underline hover:underline">Ver todo</a>
       @for (facet of facets(); track facet.id) {
         <app-facet-card [facet]="facet" [type]="type()" />
       }

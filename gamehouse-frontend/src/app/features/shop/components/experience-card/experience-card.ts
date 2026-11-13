@@ -9,7 +9,7 @@ import { CoverImage } from '../../../../shared/components/cover-image/cover-imag
   selector: 'app-experience-card',
   imports: [RouterLink, CoverImage, LucideCalendarDays, LucideMapPin, LucideUser],
   template: `
-    <article class="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md">
+    <article class="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-superficie shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md">
       <app-cover-image class="aspect-[16/10]" [url]="experience().imageUrl" [alt]="'Imagen de ' + experience().name" />
       <div class="flex flex-1 flex-col gap-3 p-5">
         @if (experience().categories.length) {

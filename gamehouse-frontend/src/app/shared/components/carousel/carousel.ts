@@ -73,11 +73,11 @@ import { LucideChevronLeft, LucideChevronRight } from '@lucide/angular';
     :host ::ng-deep .track > * { scroll-snap-align: start; min-width: 0; }
     .arrow {
       display: grid; place-items: center; width: 2.25rem; height: 2.25rem;
-      border-radius: 999px; border: 1px solid var(--borde); background: #fff; color: var(--tinta);
+      border-radius: 999px; border: 1px solid var(--borde); background: var(--superficie); color: var(--tinta);
     }
-    .arrow:hover:not(:disabled) { background: #eff1f6; }
+    .arrow:hover:not(:disabled) { background: var(--superficie-hover); }
     .arrow:disabled { opacity: .4; cursor: default; }
-    .dot { width: .55rem; height: .55rem; border-radius: 999px; border: 0; background: #cbd2e0; padding: 0; }
+    .dot { width: .55rem; height: .55rem; border-radius: 999px; border: 0; background: var(--borde-fuerte); padding: 0; }
     .dot.active { width: 1.5rem; background: var(--azul); }
     @media (prefers-reduced-motion: reduce) { .track { scroll-behavior: auto; } }
   `],

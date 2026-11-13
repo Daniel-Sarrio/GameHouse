@@ -16,7 +16,7 @@ import { AuthService } from '../../../../auth/auth.service';
     <section class="p-6 sm:p-10">
       <header class="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p class="text-xs font-bold uppercase tracking-widest text-indigo-600">Administración</p>
+          <p class="text-xs font-bold uppercase tracking-widest text-acento-texto">Administración</p>
           <h1 class="mt-2 text-3xl font-bold">Usuarios</h1>
           <p class="mt-2 text-sm text-slate-500">
             Gestiona cuentas, permisos y acceso a GameHouse.
@@ -28,7 +28,7 @@ import { AuthService } from '../../../../auth/auth.service';
       </header>
       @if (formOpen()) {
         <section
-          class="mb-6 rounded-2xl border border-indigo-200 bg-white p-6"
+          class="mb-6 rounded-2xl border border-indigo-200 bg-superficie p-6"
           aria-labelledby="user-form-heading"
         >
           <h2 id="user-form-heading" class="mb-5 text-xl font-bold">
@@ -53,14 +53,14 @@ import { AuthService } from '../../../../auth/auth.service';
       <div class="mb-5 flex flex-wrap gap-3">
         <label class="flex flex-1 items-center gap-3 text-sm"
           >Buscar en esta página<input
-            class="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white p-3"
+            class="min-w-0 flex-1 rounded-xl border border-slate-300 bg-superficie p-3"
             placeholder="Nombre o correo"
             [value]="search()"
             (input)="search.set($any($event.target).value)"
         /></label>
         <label class="flex items-center gap-3 text-sm"
           >Estado<select
-            class="rounded-xl border border-slate-300 bg-white p-3"
+            class="rounded-xl border border-slate-300 bg-superficie p-3"
             [value]="filter()"
             (change)="filter.set($any($event.target).value)"
           >
@@ -72,14 +72,14 @@ import { AuthService } from '../../../../auth/auth.service';
         >
       </div>
       @if (store.loading()) {
-        <p class="rounded-xl bg-white p-8 text-center" role="status">Cargando usuarios…</p>
+        <p class="rounded-xl bg-superficie p-8 text-center" role="status">Cargando usuarios…</p>
       } @else if (store.error()) {
         <div role="alert" class="rounded-xl bg-red-50 p-6">
           <p>{{ store.error() }}</p>
           <button class="boton boton-secundario mt-3" (click)="store.load()">Reintentar</button>
         </div>
       } @else {
-        <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+        <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-superficie">
           <table class="w-full text-left text-sm">
             <caption class="sr-only">
               Usuarios, rol y estado de acceso
@@ -100,7 +100,7 @@ import { AuthService } from '../../../../auth/auth.service';
                     <strong class="block">{{ user.name || 'Sin nombre' }}</strong
                     ><span class="text-slate-500">{{ user.email }}</span>
                     @if (user.id === auth.user()?.id) {
-                      <span class="ml-2 text-xs text-indigo-600">Tú</span>
+                      <span class="ml-2 text-xs text-acento-texto">Tú</span>
                     }
                   </td>
                   <td class="p-4">{{ user.role }}</td>

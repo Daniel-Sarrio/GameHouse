@@ -9,10 +9,10 @@ import { CoverImage } from '../../../../shared/components/cover-image/cover-imag
   imports: [RouterLink, CoverImage],
   template: `
     <a [routerLink]="['/tienda']" [queryParams]="queryParams()"
-      class="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white no-underline shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md">
+      class="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-superficie no-underline shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md">
       <app-cover-image class="aspect-[4/3]" [url]="facet().imageUrl" [alt]="'Imagen de ' + facet().name" />
       <span class="flex flex-1 flex-col gap-1 p-4">
-        <span class="text-xs font-bold tracking-widest text-indigo-600 uppercase">{{ typeLabel() }}</span>
+        <span class="text-xs font-bold tracking-widest text-acento-texto uppercase">{{ typeLabel() }}</span>
         <strong class="text-base leading-snug text-slate-900 group-hover:text-indigo-700">{{ facet().name }}</strong>
         @if (subtitle()) { <span class="text-sm text-slate-500">{{ subtitle() }}</span> }
         <span class="mt-auto pt-2 text-xs font-semibold text-slate-400">

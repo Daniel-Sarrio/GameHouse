@@ -1,21 +1,127 @@
 @import "tailwindcss";
 
+/* La variante dark: de Tailwind depende de la clase .dark que ThemeStore aplica en <html>. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Tokens de diseño. Los componentes usan estas variables (CSS propio) o sus utilidades
+ * semánticas de Tailwind (bg-superficie, text-tinta, border-borde, bg-acento...), nunca
+ * colores fijos, para que el modo oscuro funcione sin tocar cada componente.
+ */
 :root {
   --fondo: #f4f5f2;
+  --superficie: #fff;
+  --superficie-suave: #f8fafc;
+  --superficie-hundida: #f1f5f9;
+  --superficie-hover: #eff1f6;
   --tinta: #17213c;
+  --texto-secundario: #334155;
   --suave: #626d81;
+  --texto-tenue: #94a3b8;
+  --borde: #dce1e6;
+  --borde-fuerte: #cbd5e1;
   --azul: #3448dc;
   --azul-oscuro: #2435ae;
-  --borde: #dce1e6;
+  --acento-texto: #3448dc;
+  --acento-fuerte: #3730a3;
+  --acento-suave: #eef2ff;
+  --acento-borde: #a5b4fc;
+  --enfoque: #8d9aff;
+  --peligro: #b91c1c;
+  --peligro-texto: #872b26;
+  --peligro-suave: #fff2f1;
+  --peligro-borde: #f0c9c6;
+  --exito-texto: #047857;
+  --exito-suave: #ecfdf5;
+  --aviso-texto: #92400e;
+  --aviso-suave: #fffbeb;
+  --info-texto: #075985;
+  --info-suave: #e0f2fe;
+  --esqueleto: #eff1f6;
   font-family: Inter, 'Segoe UI', system-ui, sans-serif;
   color: var(--tinta);
   background: var(--fondo);
   font-synthesis: none;
 }
 
+:root.dark {
+  --fondo: #0f1420;
+  --superficie: #171e2c;
+  --superficie-suave: #1b2333;
+  --superficie-hundida: #222b3c;
+  --superficie-hover: #232c3f;
+  --tinta: #e6eaf2;
+  --texto-secundario: #c3cad7;
+  --suave: #9aa3b5;
+  --texto-tenue: #838ea3;
+  --borde: #2a3346;
+  --borde-fuerte: #3a4458;
+  --azul: #4a5cf0;
+  --azul-oscuro: #3b4ddb;
+  --acento-texto: #9aa8ff;
+  --acento-fuerte: #c7d0ff;
+  --acento-suave: #232a52;
+  --acento-borde: #4e5aa6;
+  --peligro: #f87171;
+  --peligro-texto: #fca5a5;
+  --peligro-suave: #341b20;
+  --peligro-borde: #6a2c33;
+  --exito-texto: #6ee7b7;
+  --exito-suave: #11322a;
+  --aviso-texto: #fcd34d;
+  --aviso-suave: #352a12;
+  --info-texto: #7dd3fc;
+  --info-suave: #102f45;
+  --esqueleto: #232c3f;
+
+  /*
+   * Las plantillas usan la escala slate y tintes claros de estado (fondos *-50, textos *-700).
+   * En oscuro se reasignan aquí, en un único sitio. Los tonos que también se usan como
+   * relleno sólido (indigo-500/600, amber-500...) no se tocan.
+   */
+  --color-slate-50: #1b2333;
+  --color-slate-100: #232c3d;
+  --color-slate-200: #2c3649;
+  --color-slate-300: #3a4559;
+  --color-slate-400: #838ea3;
+  --color-slate-500: #9aa3b5;
+  --color-slate-600: #b4bccb;
+  --color-slate-700: #cbd2de;
+  --color-slate-800: #dde2ea;
+  --color-slate-900: #e6eaf2;
+  --color-slate-950: #f5f7fa;
+  --color-indigo-50: #232a52;
+  --color-indigo-100: #2c3466;
+  --color-indigo-200: #3c4685;
+  --color-indigo-700: #b4beff;
+  --color-indigo-950: #e3e7ff;
+  --color-red-50: #341b20;
+  --color-red-700: #fca5a5;
+  --color-emerald-50: #11322a;
+  --color-emerald-700: #6ee7b7;
+  --color-emerald-800: #a7f3d0;
+  --color-amber-50: #352a12;
+  --color-amber-900: #fde68a;
+
+  /* Esqueletos de carga (ngx-skeleton-loader). */
+  --ngx-skeleton-loader-base-color: var(--esqueleto);
+}
+
+/* Utilidades semánticas de Tailwind: bg-superficie, text-tinta, border-borde, bg-acento... */
+@theme inline {
+  --color-fondo: var(--fondo);
+  --color-superficie: var(--superficie);
+  --color-superficie-suave: var(--superficie-suave);
+  --color-tinta: var(--tinta);
+  --color-suave: var(--suave);
+  --color-borde: var(--borde);
+  --color-acento: var(--azul);
+  --color-acento-texto: var(--acento-texto);
+}
+
 *, *::before, *::after { box-sizing: border-box; }
 html { min-width: 320px; scroll-behavior: smooth; }
-body { margin: 0; min-height: 100vh; background: var(--fondo); }
+body { margin: 0; min-height: 100vh; background: var(--fondo); transition: background-color .2s, color .2s; }
 app-root { min-height: 100vh; display: flex; flex-direction: column; }
 main { flex: 1; }
 button, input, textarea { font: inherit; }
@@ -39,13 +145,18 @@ button { cursor: pointer; }
 .boton:disabled { opacity: .55; cursor: not-allowed; transform: none; }
 .boton-primario { background: var(--azul); color: #fff; }
 .boton-primario:hover { background: var(--azul-oscuro); }
-.boton-secundario { background: #fff; color: var(--tinta); border-color: var(--borde); }
-.boton-secundario:hover { background: #eff1f6; }
+.boton-secundario { background: var(--superficie); color: var(--tinta); border-color: var(--borde); }
+.boton-secundario:hover { background: var(--superficie-hover); }
 .boton-peligro { background: #ad3234; color: #fff; }
 .boton-peligro:hover { background: #8e2428; }
 .pie { border-top: 1px solid var(--borde); padding: 1.6rem 0; color: var(--suave); font-size: .85rem; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-:focus-visible { outline: 3px solid #8d9aff; outline-offset: 3px; }
+:focus-visible { outline: 3px solid var(--enfoque); outline-offset: 3px; }
+
+/* Campos de formulario sin estilo propio: heredan los colores del tema. */
+input:not([type='checkbox']):not([type='radio']):not([type='range']), select, textarea {
+  color: inherit;
+}
 
 @media (max-width: 520px) { .contenedor { width: min(100% - 1.4rem, 1180px); } }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { transition-duration: .01ms !important; } }

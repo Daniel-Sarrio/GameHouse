@@ -1,2 +1,2 @@
-.error { background: #fff2f1; border: 1px solid #f0c9c6; border-radius: 16px; color: #872b26; padding: 1.4rem; }
+.error { background: var(--peligro-suave); border: 1px solid var(--peligro-borde); border-radius: 16px; color: var(--peligro-texto); padding: 1.4rem; }
 .error p { margin: .4rem 0 1rem; }

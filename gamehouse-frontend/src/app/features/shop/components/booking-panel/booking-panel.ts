@@ -9,7 +9,7 @@ import { dateText, priceText, timeRangeText } from '../../../../core/utils/shop.
 @Component({
   selector: 'app-booking-panel',
   template: `
-    <aside class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" aria-label="Resumen de reserva">
+    <aside class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-superficie p-5 shadow-sm" aria-label="Resumen de reserva">
       <div>
         <span class="text-xs text-slate-500">{{ departure() ? 'Precio por plaza' : 'Desde' }}</span>
         <p class="m-0 text-2xl font-bold text-slate-900">{{ price(departure()?.price ?? minPrice()) }}</p>

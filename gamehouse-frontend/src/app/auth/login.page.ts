@@ -12,10 +12,10 @@ import { safeReturnUrl } from './auth.utils';
   template: `
     <main class="flex min-h-dvh items-center justify-center bg-slate-50 px-4 py-8 sm:p-8">
       <section
-        class="w-full max-w-xl rounded-3xl border border-slate-200 bg-white px-6 py-10 shadow-sm sm:p-12"
+        class="w-full max-w-xl rounded-3xl border border-slate-200 bg-superficie px-6 py-10 shadow-sm sm:p-12"
         aria-labelledby="login-title"
       >
-        <p class="mb-6 text-center text-sm font-bold tracking-widest text-indigo-600">GAMEHOUSE</p>
+        <p class="mb-6 text-center text-sm font-bold tracking-widest text-acento-texto">GAMEHOUSE</p>
         <h1 id="login-title" class="text-center text-3xl font-bold text-slate-900 sm:text-4xl">Iniciar sesión</h1>
         <p class="mb-10 mt-3 text-center text-base text-slate-500">Accede a tu espacio.</p>
         @if (route.snapshot.queryParamMap.get('reason') === 'session') {
