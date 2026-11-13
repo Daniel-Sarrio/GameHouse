@@ -10,6 +10,7 @@ import { CoverImage } from '../../../../shared/components/cover-image/cover-imag
 import { MensajeError } from '../../../../shared/components/error-state/mensaje-error';
 import { BookingPanel } from '../../components/booking-panel/booking-panel';
 import { DeparturePicker } from '../../components/departure-picker/departure-picker';
+import { EventAgent } from '../../components/event-agent/event-agent';
 
 const parseId = (value: string | undefined): number | null => {
   const id = Number(value);
@@ -20,7 +21,7 @@ const parseId = (value: string | undefined): number | null => {
   selector: 'app-shop-experience-detail-page',
   imports: [
     RouterLink, NgxSkeletonLoaderComponent, LucideArrowLeft, LucideCalendarDays, LucideMapPin, LucideTag, LucideUser,
-    Carousel, CoverImage, MensajeError, BookingPanel, DeparturePicker,
+    Carousel, CoverImage, MensajeError, BookingPanel, DeparturePicker, EventAgent,
   ],
   template: `
     <section class="contenedor py-8 sm:py-10">
@@ -97,6 +98,8 @@ const parseId = (value: string | undefined): number | null => {
                 <p class="mt-2 mb-0 text-sm text-slate-600">{{ experience.host.description }}</p>
               </section>
             }
+
+            <app-event-agent [experience]="experience" [departures]="store.departures()" />
           </div>
 
           <div class="lg:sticky lg:top-24 lg:self-start">
