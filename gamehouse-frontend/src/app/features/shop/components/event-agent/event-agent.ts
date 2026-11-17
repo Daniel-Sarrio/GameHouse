@@ -76,7 +76,7 @@ const toAgentDeparture = (departure: Departure): AgentDeparture => ({
   `,
   styles: [`
     .agente { display: flex; flex-direction: column; gap: .75rem; padding: 1.25rem; border: 1px solid var(--borde); border-radius: 16px; background: var(--superficie); }
-    .mensajes { display: flex; flex-direction: column; gap: .5rem; max-height: 18rem; margin: 0; padding: 0; overflow-y: auto; list-style: none; }
+    .mensajes { display: flex; flex-direction: column; gap: .5rem; max-height: min(18rem, 30vh); margin: 0; padding: 0; overflow-y: auto; list-style: none; }
     .mensaje { align-self: flex-start; max-width: 85%; padding: .6rem .8rem; border-radius: 12px 12px 12px 4px; background: var(--superficie-hundida); color: var(--tinta); font-size: .9rem; line-height: 1.45; white-space: pre-line; overflow-wrap: anywhere; }
     .mensaje.usuario { align-self: flex-end; border-radius: 12px 12px 4px 12px; background: var(--acento-suave); color: var(--acento-fuerte); }
     .escribiendo { color: var(--suave); font-style: italic; }

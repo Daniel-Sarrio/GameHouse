@@ -98,13 +98,13 @@ const parseId = (value: string | undefined): number | null => {
                 <p class="mt-2 mb-0 text-sm text-slate-600">{{ experience.host.description }}</p>
               </section>
             }
-
-            <app-event-agent [experience]="experience" [departures]="store.departures()" />
           </div>
 
-          <div class="lg:sticky lg:top-24 lg:self-start">
+          <!-- Columna lateral: resumen de reserva y, debajo, el chat del AgenteIA. -->
+          <div class="flex flex-col gap-5 lg:sticky lg:top-24 lg:self-start">
             <app-booking-panel [departure]="store.selectedDeparture()" [minPrice]="experience.minPrice"
               [spots]="store.spots()" [total]="store.total()" (spotsChange)="store.setSpots($event)" />
+            <app-event-agent [experience]="experience" [departures]="store.departures()" />
           </div>
         </div>
       }
