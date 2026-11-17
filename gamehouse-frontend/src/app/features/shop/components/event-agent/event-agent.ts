@@ -11,10 +11,19 @@ import { AgentService } from '../../../../core/services/agent.service';
 
 const FRIENDLY_ERROR = 'No he podido responder ahora mismo. Inténtalo de nuevo en unos segundos.';
 
+const pad = (value: number): string => String(value).padStart(2, '0');
+
+/** Fecha en hora local del usuario ("2026-11-20 18:00"), la misma que muestra la tienda. */
+const toLocalDateTime = (value: string): string => {
+  const date = new Date(value);
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+
 /** Convierte una departure de la tienda al formato que espera el agente. */
 const toAgentDeparture = (departure: Departure): AgentDeparture => ({
-  startDatetime: departure.startDatetime,
-  endDatetime: departure.endDatetime,
+  // Se envía en hora local: en UTC el modelo daría horas distintas a las de la página.
+  startDatetime: toLocalDateTime(departure.startDatetime),
+  endDatetime: toLocalDateTime(departure.endDatetime),
   price: departure.price,
   capacity: departure.capacity,
   availableSpots: departure.availableSpots,
