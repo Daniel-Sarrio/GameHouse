@@ -100,8 +100,8 @@ const parseId = (value: string | undefined): number | null => {
             }
           </div>
 
-          <!-- Columna lateral: resumen de reserva y, debajo, el chat del AgenteIA. -->
-          <div class="flex flex-col gap-5 lg:sticky lg:top-24 lg:self-start">
+          <!-- Columna lateral: resumen de reserva y, debajo, el chat del AgenteIA. Si no cabe, scroll propio. -->
+          <div class="flex flex-col gap-5 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:self-start lg:overflow-y-auto">
             <app-booking-panel [departure]="store.selectedDeparture()" [minPrice]="experience.minPrice"
               [spots]="store.spots()" [total]="store.total()" (spotsChange)="store.setSpots($event)" />
             <app-event-agent [experience]="experience" [departures]="store.departures()" />
