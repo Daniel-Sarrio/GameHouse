@@ -27,7 +27,7 @@ npm run dev
 
 `npm seed` desde la raíz también aplica la migración y carga los datos de prueba. Migración y seed se pueden ejecutar varias veces sin duplicar eventos programados.
 
-Puedes ejecutar `npm start` tanto desde `GameHouse` como desde `gamehouse-backend`. El servidor siempre carga el `.env` de `gamehouse-backend`. Inicia una sola instancia: si el puerto 3000 está ocupado por otra instancia de GameHouse, usa esa instancia o detenla con Ctrl+C en su terminal antes de volver a arrancar. Para comprobar la API, abre `http://localhost:3000/api/events`; la raíz `/` no sirve el frontend.
+Puedes ejecutar `npm start` tanto desde `GameHouse` como desde `gamehouse-backend`. El servidor siempre carga el `.env` de `gamehouse-backend`. Inicia una sola instancia: si el puerto 3000 está ocupado por otra instancia de GameHouse, usa esa instancia o detenla con Ctrl+C en su terminal antes de volver a arrancar. Los clientes no llaman al puerto 3000 directamente: entran por el API Gateway (`gamehouse-gateway`, puerto 4000). Para comprobar la API, arranca también el gateway y abre `http://localhost:4000/api/events`; la raíz `/` no sirve el frontend.
 
 ## Modelo de datos
 
@@ -79,9 +79,10 @@ DB_PASSWORD=tu_contrasena
 JWT_SECRET=<secreto-aleatorio-de-al-menos-32-bytes>
 JWT_EXPIRES_IN=1h
 CORS_ORIGINS=http://localhost:4200
+TRUST_PROXY=loopback
 ```
 
-Genera `JWT_SECRET` con `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"` y guárdalo solo en `.env`, excluido de Git. El servidor rechaza secretos ausentes o demasiado cortos. `JWT_EXPIRES_IN` acepta duraciones positivas con unidad (`30m`, `1h`, `7d`). `CORS_ORIGINS` es una lista de orígenes exactos separados por comas. Las peticiones sin Origin, como Postman, siguen permitidas.
+Genera `JWT_SECRET` con `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"` y guárdalo solo en `.env`, excluido de Git. El servidor rechaza secretos ausentes o demasiado cortos. `JWT_EXPIRES_IN` acepta duraciones positivas con unidad (`30m`, `1h`, `7d`). `CORS_ORIGINS` es una lista de orígenes exactos separados por comas. Las peticiones sin Origin, como Postman, siguen permitidas. `TRUST_PROXY` indica en qué proxies se confía para `X-Forwarded-For` (por defecto `loopback`, el gateway local), de modo que los límites de intentos usan la IP real del cliente.
 
 ## Autenticación y permisos
 

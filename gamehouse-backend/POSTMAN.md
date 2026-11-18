@@ -4,7 +4,7 @@ La experiencia es genérica y puede reutilizarse en varios eventos.
 
 ## Autenticación
 
-Usa una variable `baseUrl` con valor `http://localhost:3000`. Para peticiones JSON selecciona Body → raw → JSON. Las operaciones administrativas de los ejemplos posteriores requieren una sesión ADMIN. Postman conserva la cookie del servidor. Añade `X-Requested-With: XMLHttpRequest` a las escrituras con cookie.
+Usa una variable `baseUrl` con valor `http://localhost:4000` (el API Gateway, que reenvía al backend). Para peticiones JSON selecciona Body → raw → JSON. Las operaciones administrativas de los ejemplos posteriores requieren una sesión ADMIN. Postman conserva la cookie del servidor. Añade `X-Requested-With: XMLHttpRequest` a las escrituras con cookie.
 
 ### Registro
 

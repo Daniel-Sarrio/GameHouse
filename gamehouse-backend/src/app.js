@@ -21,6 +21,9 @@ const { adminWrites, authorizeRoles } = require('./middleware/authorization');
 const AppError = require('./services/utils/app-error');
 
 const app = express();
+// Se accede a través del API Gateway (puerto 4000): se confía en su X-Forwarded-For para que req.ip
+// (y los límites de intentos de login/registro) usen la IP real del cliente y no la del gateway.
+app.set('trust proxy', process.env.TRUST_PROXY || 'loopback');
 
 const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:4200').split(',').map((value) => value.trim()).filter(Boolean);
 app.use(cors({

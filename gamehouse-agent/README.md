@@ -1,6 +1,6 @@
 # GameHouse Agent
 
-Servidor Express independiente (puerto 3001) que da vida al AgenteIA del detalle de experiencias de la tienda (`/tienda/:slug`). Responde dudas sobre **una** experiencia usando OpenRouter. No tiene base de datos, no se conecta al backend de GameHouse y no guarda historial: el frontend envía el contexto del evento y los últimos mensajes en cada petición.
+Servidor Express independiente (puerto 3001, detrás del API Gateway en el 4000) que da vida al AgenteIA del detalle de experiencias de la tienda (`/tienda/:slug`). Responde dudas sobre **una** experiencia usando OpenRouter. No tiene base de datos, no se conecta al backend de GameHouse y no guarda historial: el frontend envía el contexto del evento y los últimos mensajes en cada petición.
 
 ## Configuración
 
@@ -31,7 +31,7 @@ npm run build && npm start  # compilado a dist/
 
 ## Endpoint
 
-`POST /api/agent/chat`
+`POST /api/agent/chat` — los clientes lo llaman a través del gateway: `http://localhost:4000/api/agent/chat`.
 
 ```json
 {

@@ -71,14 +71,14 @@ Componentes reutilizables en `shared/components`: `Carousel` (scroll-snap, flech
 
 ## Instalación y ejecución
 
-Inicia primero el backend en `http://localhost:3000`. Después, en `gamehouse-frontend`:
+Inicia primero el backend (puerto 3000), el agente (puerto 3001) y el API Gateway (`gamehouse-gateway`, puerto 4000). El frontend solo habla con el gateway. Después, en `gamehouse-frontend`:
 
 ```bash
 npm install
 npm start
 ```
 
-Abre `http://localhost:4200`. La URL base de la API se cambia en `src/environments/environment.ts` y `src/environments/environment.development.ts`; permite ese origen en el CORS del backend. Necesitas una cuenta existente: el registro público crea USER y el README del backend explica cómo preparar el primer ADMIN. No se incluyen credenciales de administrador en el frontend.
+Abre `http://localhost:4200`. Las URLs `apiUrl` y `agentUrl` apuntan al gateway (`http://localhost:4000`) y se cambian en `src/environments/environment.ts` y `src/environments/environment.development.ts`; permite el origen del frontend en el CORS del backend y del agente. Necesitas una cuenta existente: el registro público crea USER y el README del backend explica cómo preparar el primer ADMIN. No se incluyen credenciales de administrador en el frontend.
 
 ## Endpoints usados
 

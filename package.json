@@ -3,6 +3,8 @@
   "private": true,
   "scripts": {
     "start": "npm --prefix gamehouse-backend start",
+    "start:gateway": "npm --prefix gamehouse-gateway run dev",
+    "start:agent": "npm --prefix gamehouse-agent run dev",
     "seed": "npm --prefix gamehouse-backend run seed"
   }
 }
