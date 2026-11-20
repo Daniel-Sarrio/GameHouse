@@ -16,7 +16,7 @@ async function migrateAuth(client) {
     }
   }
   await migrateUsers(client);
-  await client.query(fs.readFileSync(path.join(__dirname, 'migrations', '005_auth_logout.sql'), 'utf8'));
+  await client.query(fs.readFileSync(path.join(__dirname, 'migrations', '007_refresh_tokens.sql'), 'utf8'));
 }
 
 async function main() {
