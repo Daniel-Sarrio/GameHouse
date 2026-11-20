@@ -9,7 +9,7 @@ Dashboard Angular conectado a la API Express + PostgreSQL de GameHouse. Sigue la
 3. ADMIN accede a `/usuarios`, `/experiencias`, `/eventos`, `/categorias`, `/organizadores`, `/lugares` y `/roles`, incluidos detalles y formularios.
 4. El menú adapta sus opciones al rol. Un USER que intenta abrir un módulo de administración llega a `/sin-acceso`.
 5. Los usuarios se pueden crear, editar, activar/desactivar y eliminar mediante softdelete. Los datos eliminados se conservan.
-6. Cerrar sesión o caducar el JWT lleva al login. Los guards conservan la ruta de destino para después del acceso.
+6. Cerrar sesión o terminar la sesión (refresh rechazado) lleva al login. Los guards conservan la ruta de destino para después del acceso.
 
 ## Estructura
 
@@ -43,13 +43,13 @@ Las páginas coordinan UI y routing. Los stores mantienen el estado con Angular 
 
 ## Autenticación y RBAC
 
-`AuthStore` expone `user`, `isAuthenticated`, `isAdmin`, `roles`, `login(session)`, `logout()` y `hasRole(role)`. `AuthService` ofrece `login(credentials)`, `logout()`, `restoreSession()` y `validateSession()`; se ocupa de HTTP y sincronizar el store, sin routing ni lógica de UI.
+`AuthStore` expone en signals `user`, `isAuthenticated`, `isAdmin`, `roles`, `setUser(user)`, `clear()` y `hasRole(role)`. `AuthService` ofrece `login(credentials)`, `logout()`, `restoreSession()`, `loadUser()`, `refreshSession()` y `endSession()`; se ocupa de HTTP y sincronizar el store, sin routing ni lógica de UI.
 
-El servidor guarda el JWT en una cookie HttpOnly: JavaScript no puede leerlo. El interceptor de auth utiliza `withCredentials: true` solo para la API configurada, también al iniciar sesión. Se conserva el interceptor de peticiones existente, que añade `X-Requested-With: XMLHttpRequest`. No se guarda el token en localStorage; al arrancar se elimina únicamente la clave heredada de versiones anteriores.
+El servidor guarda el access token (1 h) y el refresh token (7 días) en cookies HttpOnly: JavaScript no puede leerlos y `document.cookie` no los muestra. El interceptor de auth utiliza `withCredentials: true` solo para la API configurada. Se conserva el interceptor de peticiones existente, que añade `X-Requested-With: XMLHttpRequest`. No se guarda ningún token en localStorage; al arrancar se elimina únicamente la clave heredada de versiones anteriores. El cliente solo conoce `id`, `email`, `name`, `role` y `avatarUrl` del usuario.
 
-Al arrancar o pulsar F5, el inicializador espera a `GET /auth/me` antes de mostrar rutas privadas. La respuesta mantiene `data: user` e incluye `expiresAt` en milisegundos. Los guards ya existentes siguen validando la sesión en el servidor. El backend comprueba la firma, expiración, blacklist, usuario activo y coincidencia del rol del JWT con el rol vigente. Cambiar de rol exige iniciar sesión de nuevo.
+Al arrancar o pulsar F5, el inicializador espera a `GET /auth/me` (`loadUser()`) antes de mostrar rutas privadas. Los guards siguen validando la sesión en el servidor. El backend lee el rol de la base de datos en cada petición, así que un cambio de rol se aplica sin volver a iniciar sesión.
 
-Un temporizador cierra el estado local al caducar. Las pestañas notifican cambios mediante BroadcastChannel y revalidan al recuperar el foco. Un 401 cierra la sesión; un 403 la conserva. Logout revoca el JWT en la blacklist existente y elimina la cookie. Si falla la red se informa de que la revocación no pudo confirmarse. No hay refresh token.
+Caducidad gestionada por `auth.interceptor.ts`: ante el **primer 401** de cualquier petición a la API llama a `POST /auth/refresh` (una sola renovación compartida aunque fallen varias peticiones a la vez) y reintenta la petición una vez; ante el **segundo 401** (refresh rechazado o reintento rechazado) cierra la sesión con `POST /auth/logout` y el layout lleva al login. Un 403 conserva la sesión. Las pestañas notifican cambios mediante BroadcastChannel y revalidan al recuperar el foco. Si falla la red al cerrar sesión se informa de que la revocación no pudo confirmarse.
 
 El formulario de login está separado de la página en `shared/components/login-form`. El componente reutilizable `shared/components/avatar` muestra la imagen o iniciales si falta/falla. Navbar, cabecera y perfil leen el mismo AuthStore; guardar el perfil actualiza el avatar mediante la revalidación existente, sin F5.
 
@@ -85,7 +85,7 @@ Abre `http://localhost:4200`. Las URLs `apiUrl` y `agentUrl` apuntan al gateway 
 | Acción | Método y ruta |
 | --- | --- |
 | Home y shop | `GET /api/shop/categories`, `/hosts`, `/locations`, `/experiences?category=&host=&location=&search=&sort=&page=&limit=`, `/experiences/:slug`, `/experiences/:slug/departures` |
-| Login / sesión | `POST /api/auth/login`, `GET /api/auth/me` |
+| Login / sesión | `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/refresh`, `POST /api/auth/logout` |
 | Perfil propio | `GET/PATCH /api/profiles/me` |
 | Usuarios | `GET/POST /api/users`, `PATCH /api/users/:id` |
 | Activación de usuario | `PATCH /api/users/:id/active` con `{ isActive }` |

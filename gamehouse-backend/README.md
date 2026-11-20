@@ -60,7 +60,7 @@ Para una base vacía, aplica primero `database.sql` con tu cliente PostgreSQL. N
 | Categorías | `/api/categories` |
 | Organizadores | `/api/hosts` |
 | Roles | `/api/roles` |
-| Autenticación | `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout` |
+| Autenticación | `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/refresh`, `POST /api/auth/logout` |
 | Perfiles | `GET /api/profiles/me`, `PATCH /api/profiles/me`, `GET /api/profiles/:id`, `PATCH /api/profiles/:id` |
 | Shop (público) | `GET /api/shop/categories`, `GET /api/shop/hosts`, `GET /api/shop/locations`, `GET /api/shop/experiences`, `GET /api/shop/experiences/:slug`, `GET /api/shop/experiences/:slug/departures` |
 | Usuarios (ADMIN) | `GET /api/users`, `GET /api/users/active`, `GET /api/users/deleted`, `GET /api/users/:id`, `POST /api/users`, `PATCH /api/users/:id`, `PATCH /api/users/:id/active`, `PATCH /api/users/:id/softdelete` |
@@ -78,19 +78,30 @@ DB_USER=postgres
 DB_PASSWORD=tu_contrasena
 JWT_SECRET=<secreto-aleatorio-de-al-menos-32-bytes>
 JWT_EXPIRES_IN=1h
+REFRESH_TOKEN_EXPIRES_IN=7d
 CORS_ORIGINS=http://localhost:4200
 TRUST_PROXY=loopback
 ```
 
-Genera `JWT_SECRET` con `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"` y guárdalo solo en `.env`, excluido de Git. El servidor rechaza secretos ausentes o demasiado cortos. `JWT_EXPIRES_IN` acepta duraciones positivas con unidad (`30m`, `1h`, `7d`). `CORS_ORIGINS` es una lista de orígenes exactos separados por comas. Las peticiones sin Origin, como Postman, siguen permitidas. `TRUST_PROXY` indica en qué proxies se confía para `X-Forwarded-For` (por defecto `loopback`, el gateway local), de modo que los límites de intentos usan la IP real del cliente.
+Genera `JWT_SECRET` con `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"` y guárdalo solo en `.env`, excluido de Git. El servidor rechaza secretos ausentes o demasiado cortos. `JWT_EXPIRES_IN` (access token, por defecto `1h`) y `REFRESH_TOKEN_EXPIRES_IN` (sesión, por defecto `7d`) aceptan duraciones positivas con unidad (`30m`, `1h`, `7d`). `CORS_ORIGINS` es una lista de orígenes exactos separados por comas. Las peticiones sin Origin, como Postman, siguen permitidas. `TRUST_PROXY` indica en qué proxies se confía para `X-Forwarded-For` (por defecto `loopback`, el gateway local), de modo que los límites de intentos usan la IP real del cliente.
 
 ## Autenticación y permisos
 
 - Registro: email, password de 12 a 128 caracteres y, opcionalmente, firstName, lastName, phone y avatarUrl. Rechaza campos adicionales, incluido role. Siempre crea USER.
-- Login: emite la cookie `gamehouse_session` HttpOnly y devuelve `data.user` y `data.expiresAt` (milisegundos); el JWT no aparece en el JSON. Las contraseñas nuevas usan Argon2id; un login correcto con bcrypt antiguo actualiza el hash. No se devuelven hashes.
-- `GET /api/auth/me` sigue el flujo ruta → controlador → servicio → repositorio y devuelve el usuario actual en `data`. `POST /api/auth/logout` utiliza la cookie y revoca ese token en PostgreSQL, sin desactivar la cuenta ni cerrar otras sesiones. El servidor elimina la cookie al cerrar sesión. Cada JWT nuevo tiene un `jti` único, incluso en logins del mismo segundo.
-- La migración `005_auth_logout.sql`, incluida en `npm run migrate:auth` y `npm run migrate`, crea `revoked_tokens`. Solo guarda la huella SHA-256 y la caducidad; las revocaciones sobreviven al reinicio del backend y se limpian cuando caducan durante posteriores cierres de sesión.
-- El navegador envía la cookie con `withCredentials: true`. Se conserva Bearer para clientes API existentes. CORS permite credenciales solo a los orígenes configurados; las escrituras con cookie requieren `X-Requested-With: XMLHttpRequest`. La cookie tiene `HttpOnly`, `SameSite=Lax`, `Path=/api` y `Secure` en producción (HTTPS obligatorio). Usa el mismo hostname para frontend y API en desarrollo, por ejemplo `localhost` en ambos. JWT usa HS256, emisor y audiencia fijos, subject UUID y expiración obligatoria. El payload incluye `role` (USER o ADMIN) al emitir el token. El servicio auth verifica el usuario activo y su rol activo en PostgreSQL en cada petición; si el rol del JWT ya no coincide se devuelve 401. Eliminar el usuario invalida sus tokens. El hash de contraseña ya se compara en el servicio auth mediante Argon2id/bcrypt; el rol no es una contraseña ni necesita hash propio.
+- Sesión con dos cookies HttpOnly que JavaScript no puede leer. Ningún token ni caducidad aparece en el JSON:
+
+  | Cookie | Contenido | Duración | Path |
+  | --- | --- | --- | --- |
+  | `gamehouse_access` | JWT HS256 con solo `sub` (usuario), `sid` (sesión), `jti`, `iat`, `exp`, `iss` y `aud`. Sin rol, email ni datos personales. | 1 h | `/api` |
+  | `gamehouse_refresh` | Token opaco aleatorio de 256 bits (no es un JWT). | 7 días | `/api/auth` |
+
+  Ambas usan `SameSite=Strict` y `Secure` en producción (HTTPS obligatorio). El refresh token solo viaja a `/api/auth`, nunca al resto de la API. No se acepta `Authorization: Bearer`.
+- Login y registro emiten las dos cookies y devuelven solo `data.user` con `id`, `email`, `name`, `role` y `avatarUrl`. `GET /api/auth/me` devuelve ese mismo usuario mínimo. Las contraseñas nuevas usan Argon2id; un login correcto con bcrypt antiguo actualiza el hash. No se devuelven hashes.
+- `POST /api/auth/refresh` (cookie de refresh + `X-Requested-With`) rota el refresh token y emite un access token nuevo. La sesión tiene caducidad absoluta: rotar no amplía los 7 días desde el login. Reutilizar un refresh token ya rotado se trata como robo y revoca la sesión completa; si dos pestañas renuevan a la vez (margen de 30 s), la segunda recibe 200 sin cookies nuevas. Un refresh rechazado responde 401 y borra las cookies.
+- `POST /api/auth/logout` revoca la sesión de las cookies presentes (aunque el access token haya caducado) y borra ambas cookies. Es idempotente: siempre responde 200. No desactiva la cuenta ni cierra otras sesiones.
+- La migración `007_refresh_tokens.sql`, incluida en `npm run migrate:auth` y `npm run migrate`, crea `refresh_tokens` (huella SHA-256 del token, usuario, sesión, caducidad, revocación y token que lo sustituyó) y elimina `revoked_tokens`, que ya no es necesaria: revocar la sesión invalida también su access token.
+- En cada petición se verifica la firma, la expiración, que la sesión siga activa y que el usuario y su rol estén activos en PostgreSQL. El rol se lee siempre de la base de datos, así que un cambio de rol se aplica al momento sin volver a iniciar sesión. Cambiar la contraseña, desactivar o eliminar un usuario cierra todas sus sesiones.
+- El navegador envía las cookies con `withCredentials: true`. CORS permite credenciales solo a los orígenes configurados; las escrituras con cookie requieren `X-Requested-With: XMLHttpRequest`. Usa el mismo hostname para frontend y API en desarrollo, por ejemplo `localhost` en ambos.
 - USER consulta y modifica su perfil. ADMIN accede a cualquier perfil y a `/api/users`. `:id` en perfiles identifica el perfil, no el usuario.
 - Las lecturas de catálogos siguen disponibles. Las escrituras de eventos, categorías, organizadores, lugares y asignaciones, la creación de experiencias y todas las rutas de roles requieren ADMIN.
 - Editar, activar, desactivar o eliminar una experiencia requiere ADMIN o que `experiences.host_id` apunte a un organizador cuyo `hosts.user_id` sea el usuario autenticado. Solo ADMIN puede cambiar el organizador.
@@ -103,7 +114,7 @@ UPDATE users SET role = 'ADMIN', updated_at = CURRENT_TIMESTAMP
 WHERE lower(email) = lower('tu-correo@example.com');
 ```
 
-Tras cambiar el rol hay que iniciar sesión de nuevo para emitir un JWT coherente con el rol actual. No hay credenciales ni administrador de ejemplo. El navegador envía la cookie en las operaciones administrativas.
+El rol se lee de la base de datos en cada petición: el cambio se aplica sin volver a iniciar sesión. No hay credenciales ni administrador de ejemplo. El navegador envía la cookie en las operaciones administrativas.
 
 ## Borrado lógico
 
@@ -140,7 +151,7 @@ Las rutas están en `src/routes/user.routes.js`, montadas en `/api/users`; susti
 
 `name` y `avatarImageUrl` se adaptan a `profiles`: el nombre completo se guarda en `first_name` y `last_name` queda nulo al editarlo desde este endpoint; la respuesta compone `name` y devuelve `avatarUrl` y `profileId`. No se duplica el avatar en `images`, cuyo `entity_id` actual es entero. `avatarImageUrl: null` quita el avatar. `roleId` es el ID entero del catálogo y se resuelve a `users.role`; solo se admiten USER/ADMIN. No envíes role y roleId simultáneamente. `status` es una etiqueta descriptiva de hasta 30 caracteres (por defecto active); el acceso depende de isActive y deletedAt, no de esa etiqueta.
 
-Login actualiza lastLoginAt. Usuarios desactivados o eliminados reciben 401 al iniciar sesión o utilizar un token anterior. Una reactivación puede volver a permitir un token que aún no haya caducado. El borrado lógico no tiene ruta de restauración.
+Login actualiza lastLoginAt. Usuarios desactivados o eliminados reciben 401 al iniciar sesión o utilizar un token anterior. Desactivar cierra sus sesiones, así que una reactivación no revive tokens anteriores. El borrado lógico no tiene ruta de restauración.
 
 `npm run migrate:users` aplica únicamente `004_user_lifecycle.sql` y las reglas de integridad de usuarios. Añade campos sin borrar datos ni cambiar contraseñas; también forma parte de `migrate` y `migrate:auth`. El esquema nuevo incluye los roles USER y ADMIN sin crear cuentas de ejemplo. `PATCH /api/roles/:id` permite cambiar isActive; las reglas de uso se comprueban también en PostgreSQL.
 

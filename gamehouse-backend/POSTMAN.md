@@ -21,13 +21,11 @@ Usa una variable `baseUrl` con valor `http://localhost:4000` (el API Gateway, qu
 }
 ```
 
-Devuelve 201 con `data.user`, `data.profile` y `data.expiresAt`, además de una cookie HttpOnly. En Scripts → Post-response puedes guardar las variables:
+Devuelve 201 con `data.user` (`id`, `email`, `name`, `role`, `avatarUrl`) y las cookies HttpOnly `gamehouse_access` y `gamehouse_refresh`. En Scripts → Post-response puedes guardar el id del usuario (el del perfil se obtiene con `GET /api/profiles/me`):
 
 ```javascript
 if (pm.response.code === 201) {
-  const { user, profile } = pm.response.json().data;
-  pm.environment.set('userId', user.id);
-  pm.environment.set('profileId', profile.id);
+  pm.environment.set('userId', pm.response.json().data.user.id);
 }
 ```
 
@@ -44,13 +42,17 @@ Repetir el email devuelve 409. Añadir `"role": "ADMIN"` devuelve 400 y no crea 
 }
 ```
 
-Devuelve 200 con `data.user` y `data.expiresAt`; credenciales incorrectas devuelven 401. El JWT se envía exclusivamente en `Set-Cookie`, no en JSON. Deja que Postman gestione la cookie para las siguientes peticiones.
+Devuelve 200 con `data.user`; credenciales incorrectas devuelven 401. Los tokens se envían exclusivamente en `Set-Cookie` (`gamehouse_access`, 1 h, y `gamehouse_refresh`, 7 días), nunca en JSON. Deja que Postman gestione las cookies para las siguientes peticiones.
+
+### Renovar la sesión
+
+Cuando una ruta protegida devuelve 401 porque el access token caducó, envía `POST {{baseUrl}}/api/auth/refresh` con `X-Requested-With: XMLHttpRequest` y sin cuerpo. Devuelve 200 y rota ambas cookies. Si devuelve 401, la sesión ha terminado: inicia sesión de nuevo.
 
 ### Cerrar sesión
 
-Envía `POST {{baseUrl}}/api/auth/logout` con la cookie de sesión y `X-Requested-With: XMLHttpRequest`. No necesita cuerpo. Devuelve 200 con `success: true` y `data.message`. El token presentado queda revocado; reutilizarlo en una ruta protegida devuelve 401, incluso tras reiniciar el backend. Otras sesiones siguen siendo válidas.
+Envía `POST {{baseUrl}}/api/auth/logout` con la cookie de sesión y `X-Requested-With: XMLHttpRequest`. No necesita cuerpo. Devuelve siempre 200 con `success: true` y `data.message`. La sesión queda revocada: su access token y su refresh token devuelven 401, incluso tras reiniciar el backend. Otras sesiones siguen siendo válidas.
 
-La respuesta elimina la cookie automáticamente.
+La respuesta elimina ambas cookies automáticamente.
 
 ### Usuario y perfil propios
 
