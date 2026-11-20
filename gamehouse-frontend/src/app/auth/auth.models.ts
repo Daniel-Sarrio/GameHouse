@@ -1,24 +1,19 @@
 export type AuthRole = 'USER' | 'ADMIN';
 
+/**
+ * Lo único que el cliente sabe del usuario autenticado. Los tokens viven en cookies HttpOnly
+ * que JavaScript no puede leer: el cliente no conoce tokens, caducidades ni datos internos.
+ */
 export interface AuthUser {
   id: string;
   email: string;
   name: string | null;
   role: AuthRole;
-  roleId: number | null;
-  profileId: string | null;
   avatarUrl: string | null;
-  isActive: boolean;
-  deletedAt: string | null;
-  status: string;
-  lastLoginAt: string | null;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface AuthSession {
   user: AuthUser;
-  expiresAt: number;
 }
 export interface LoginCredentials {
   email: string;

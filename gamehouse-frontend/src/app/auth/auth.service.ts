@@ -1,4 +1,4 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpBackend, HttpClient } from '@angular/common/http';
 import { DestroyRef, Injectable, inject } from '@angular/core';
 import { firstValueFrom, timeout } from 'rxjs';
 import { environment } from '../../environments/environment';
@@ -6,17 +6,24 @@ import { RespuestaApi } from '../core/models/api.model';
 import { AuthSession, AuthUser, LoginCredentials } from './auth.models';
 import { AuthStore } from './auth.store';
 
+/**
+ * Sesión basada en cookies HttpOnly (withCredentials): access token de 1 h y refresh token de 7 días.
+ * El cliente nunca lee ni guarda tokens; solo conoce el usuario que devuelve el servidor.
+ */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
+  // Sin interceptores: renovar la sesión no debe disparar otro refresh, ni el spinner, ni alertas.
+  private readonly httpWithoutInterceptors = new HttpClient(inject(HttpBackend));
   private readonly store = inject(AuthStore);
-  private pendingValidation?: Promise<boolean>;
+  private pendingLoad?: Promise<boolean>;
+  private pendingRefresh?: Promise<boolean>;
   private revision = 0;
   private channel?: BroadcastChannel;
 
   constructor() {
     if (typeof window !== 'undefined') {
-      const onFocus = () => { void this.validateSession(); };
+      const onFocus = () => { if (this.store.isAuthenticated()) void this.loadUser(); };
       window.addEventListener('focus', onFocus);
       // Sincroniza pestañas sin almacenar credenciales.
       this.channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('gamehouse.auth') : undefined;
@@ -34,54 +41,80 @@ export class AuthService {
       .post<RespuestaApi<AuthSession>>(`${environment.apiUrl}/auth/login`, credentials)
       .pipe(timeout(environment.apiTimeoutMs)));
     if (revision === this.revision) {
-      this.store.login(response.data);
+      this.pendingLoad = undefined;
+      this.store.setUser(response.data.user);
       this.channel?.postMessage('session-changed');
     }
   }
 
+  /** Revoca la sesión en el servidor (borra ambas cookies) y la cierra en el cliente. */
   async logout(): Promise<void> {
     const request = firstValueFrom(this.http.post(`${environment.apiUrl}/auth/logout`, {})
       .pipe(timeout(environment.apiTimeoutMs)));
     this.clearSession();
     try { await request; }
-    catch (error) {
-      if (!(error instanceof HttpErrorResponse) || error.status !== 401) throw error;
-    } finally { this.channel?.postMessage('session-changed'); }
+    finally { this.channel?.postMessage('session-changed'); }
+  }
+
+  /**
+   * Renueva el access token con la cookie de refresh (el servidor rota ambas cookies).
+   * Si varias peticiones reciben 401 a la vez, comparten una única renovación.
+   */
+  refreshSession(): Promise<boolean> {
+    this.pendingRefresh ??= firstValueFrom(this.httpWithoutInterceptors
+      .post(`${environment.apiUrl}/auth/refresh`, {}, {
+        withCredentials: true,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      })
+      .pipe(timeout(environment.apiTimeoutMs)))
+      .then(() => true, () => false)
+      .finally(() => { this.pendingRefresh = undefined; });
+    return this.pendingRefresh;
+  }
+
+  /**
+   * La sesión no se ha podido renovar: logout en el servidor y en el cliente.
+   * Un visitante anónimo no tiene nada que cerrar, salvo que `force` indique que había sesión.
+   */
+  endSession(force = false): void {
+    if (!force && !this.store.isAuthenticated()) return;
+    void this.logout().catch(() => undefined);
   }
 
   private clearSession(): void {
     this.revision++;
-    this.store.logout();
+    this.pendingLoad = undefined;
+    this.store.clear();
   }
 
   async restoreSession(): Promise<void> {
     this.revision++;
-    this.pendingValidation = undefined;
+    this.pendingLoad = undefined;
     // Limpia la credencial heredada; nunca lee ni guarda tokens en almacenamiento web.
     try { localStorage.removeItem('gamehouse.auth.token'); } catch { /* Sin almacenamiento. */ }
-    await this.validateSession();
+    await this.loadUser();
   }
 
-  validateSession(): Promise<boolean> {
-    if (this.pendingValidation) return this.pendingValidation;
+  /** Carga el usuario actual con GET /auth/me. Si el access token caducó, el interceptor lo renueva. */
+  loadUser(): Promise<boolean> {
+    if (this.pendingLoad) return this.pendingLoad;
     const revision = this.revision;
-    const storeRevision = this.store.revision();
     const pending = firstValueFrom(this.http
-      .get<RespuestaApi<AuthUser> & { expiresAt: number }>(`${environment.apiUrl}/auth/me`)
+      .get<RespuestaApi<AuthUser>>(`${environment.apiUrl}/auth/me`)
       .pipe(timeout(environment.apiTimeoutMs)))
-      .then(({ data, expiresAt }) => {
-        if (revision !== this.revision || storeRevision !== this.store.revision()) return false;
-        this.store.login({ expiresAt, user: data });
+      .then(({ data }) => {
+        if (revision !== this.revision) return this.store.isAuthenticated();
+        this.store.setUser(data);
         return true;
       })
       .catch(() => {
-        if (revision === this.revision && storeRevision === this.store.revision()) this.clearSession();
+        if (revision === this.revision) this.clearSession();
         return false;
       })
       .finally(() => {
-        if (this.pendingValidation === pending) this.pendingValidation = undefined;
+        if (this.pendingLoad === pending) this.pendingLoad = undefined;
       });
-    this.pendingValidation = pending;
+    this.pendingLoad = pending;
     return pending;
   }
 }

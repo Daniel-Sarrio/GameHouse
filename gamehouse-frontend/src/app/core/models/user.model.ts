@@ -1,5 +1,15 @@
 import { AuthRole, AuthUser } from '../../auth/auth.models';
-export type User = AuthUser;
+/** Usuario completo de la administración (GET /api/users); la sesión solo expone `AuthUser`. */
+export interface User extends AuthUser {
+  roleId: number | null;
+  profileId: string | null;
+  isActive: boolean;
+  deletedAt: string | null;
+  status: string;
+  lastLoginAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
 export interface UserPayload {
   name: string;
   email: string;

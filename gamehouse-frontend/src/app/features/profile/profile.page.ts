@@ -137,7 +137,7 @@ export class ProfilePage {
         phone: value.phone.trim() || null,
         avatarUrl: value.avatarUrl.trim() || null,
       });
-      await this.authService.validateSession();
+      await this.authService.loadUser();
       this.saved.set(true);
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'No se pudo guardar el perfil.');

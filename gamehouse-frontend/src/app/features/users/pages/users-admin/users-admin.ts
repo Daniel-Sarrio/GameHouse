@@ -236,7 +236,7 @@ export class UsersAdmin {
       }
       this.formOpen.set(false);
       if (user?.id === this.auth.user()?.id) {
-        await this.authService.validateSession();
+        await this.authService.loadUser();
         if (!this.auth.isAdmin()) await this.router.navigate(['/dashboard']);
       }
     }, 'Usuario guardado.');

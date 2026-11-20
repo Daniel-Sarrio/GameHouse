@@ -7,7 +7,7 @@ export const adminGuard: CanActivateFn = async (_, state) => {
   const auth = inject(AuthService);
   const store = inject(AuthStore);
   const router = inject(Router);
-  if (!(await auth.validateSession()))
+  if (!(await auth.loadUser()))
     return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
   return store.isAdmin() || router.createUrlTree(['/sin-acceso']);
 };
