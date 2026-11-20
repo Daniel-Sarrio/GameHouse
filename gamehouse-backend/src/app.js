@@ -19,6 +19,7 @@ const shopRoutes = require('./routes/shop.routes');
 const { authenticate } = require('./middleware/authentication');
 const { adminWrites, authorizeRoles } = require('./middleware/authorization');
 const AppError = require('./services/utils/app-error');
+const { hasAuthCookie } = require('./services/utils/auth-cookie');
 
 const app = express();
 // Se accede a través del API Gateway (puerto 4000): se confía en su X-Forwarded-For para que req.ip
@@ -32,7 +33,8 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new AppError('Origin not allowed', 403));
   },
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  // La sesión viaja solo en cookies HttpOnly; no se acepta Authorization: Bearer.
+  allowedHeaders: ['Content-Type', 'X-Requested-With'],
   methods: ['GET', 'HEAD', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
 }));
 app.use(helmet());
@@ -41,7 +43,7 @@ app.use(express.json({ limit: '32kb' }));
 app.use(cookieParser());
 // Las escrituras con cookies requieren un header que un formulario externo no puede enviar.
 app.use((req, res, next) => {
-  if (req.cookies.gamehouse_session && !['GET', 'HEAD', 'OPTIONS'].includes(req.method)
+  if (hasAuthCookie(req) && !['GET', 'HEAD', 'OPTIONS'].includes(req.method)
     && req.get('X-Requested-With') !== 'XMLHttpRequest') {
     return next(new AppError('Invalid request origin', 403));
   }

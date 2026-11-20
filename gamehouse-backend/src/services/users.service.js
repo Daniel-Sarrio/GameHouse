@@ -5,6 +5,7 @@ const AppError = require('./utils/app-error');
 const pool = require('../config/database');
 const profiles = require('../repos/profiles.repo');
 const hosts = require('../repos/hosts.repo');
+const auth = require('../repos/auth.repo');
 const { hashPassword } = require('./utils/password');
 const { z } = require('zod');
 
@@ -71,6 +72,8 @@ const updateUser = async (id, body) => {
     if (passwordHash !== undefined) changes.passwordHash = passwordHash;
     if (body.role !== undefined || body.roleId !== undefined) changes.role = await resolveRole(body, client);
     await users.update(client, id, changes);
+    // Una contraseña nueva cierra todas las sesiones abiertas con la anterior.
+    if (passwordHash !== undefined) await auth.revokeUserSessions(id, client);
     const changesToProfile = profileData(body);
     if (Object.keys(changesToProfile).length) {
       const profile = await profiles.findByUserId(id, client);
@@ -93,6 +96,8 @@ const setActive = async (id, { isActive }) => {
     if (isActive && !await users.findRole({ role: current.role }, client)) {
       throw new AppError('No se puede activar: su rol está desactivado o eliminado.', 409);
     }
+    // Desactivar cierra sus sesiones: reactivar la cuenta no revive tokens anteriores.
+    if (!isActive) await auth.revokeUserSessions(id, client);
     return users.setActive(client, id, isActive);
   });
 };
@@ -104,6 +109,7 @@ const softDeleteUser = async (id) => {
     if (await hosts.countByUser(id, false, client)) {
       throw new AppError('No se puede eliminar: gestiona organizadores. Desvincula el usuario primero.', 409);
     }
+    await auth.revokeUserSessions(id, client);
     return users.softDelete(client, id);
   });
 };
