@@ -63,6 +63,7 @@ Para una base vacía, aplica primero `database.sql` con tu cliente PostgreSQL. N
 | Autenticación | `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/refresh`, `POST /api/auth/logout` |
 | Perfiles | `GET /api/profiles/me`, `PATCH /api/profiles/me`, `GET /api/profiles/:id`, `PATCH /api/profiles/:id` |
 | Shop (público) | `GET /api/shop/categories`, `GET /api/shop/hosts`, `GET /api/shop/locations`, `GET /api/shop/experiences`, `GET /api/shop/experiences/:slug`, `GET /api/shop/experiences/:slug/departures` |
+| Comentarios | `GET /api/shop/experiences/:slug/comments` (público), `POST /api/shop/experiences/:slug/comments` y `DELETE /api/shop/experiences/:slug/comments/:id` (requieren sesión) |
 | Usuarios (ADMIN) | `GET /api/users`, `GET /api/users/active`, `GET /api/users/deleted`, `GET /api/users/:id`, `POST /api/users`, `PATCH /api/users/:id`, `PATCH /api/users/:id/active`, `PATCH /api/users/:id/softdelete` |
 
 Las respuestas correctas usan `{ "success": true, "data": ... }`. Los errores usan `{ "success": false, "message": "...", "errors": [] }`.
@@ -136,6 +137,15 @@ Las rutas `/api/shop` son públicas y de solo lectura (`route → ctrl → servi
 - `GET /experiences/:slug` devuelve la experiencia con organizador, categorías, lugares, precio mínimo e imágenes para el carrusel. `/departures` lista sus salidas con fechas, precio, capacidad, lugar y `availableSpots`, preparado para restar plazas cuando exista el sistema de reservas.
 
 `migrations/006_shop_indexes.sql` (`npm run migrate:shop`, también incluido en `npm run migrate`) activa `pg_trgm` y crea índices parciales para la búsqueda por nombre, el orden por defecto, los filtros por organizador, categoría y lugar y las departures por fecha. `database.sql` ya los incluye.
+
+### Comentarios
+
+`migrations/008_comments.sql` (`npm run migrate:comments`, también incluido en `npm run migrate`) crea la tabla `comments`: experiencia, usuario (UUID), `rating` de 1 a 5, texto de 1 a 1000 caracteres, `created_at` y `deleted_at`. Borrar una experiencia o un usuario elimina sus comentarios en cascada; el borrado desde la API es lógico. Un usuario puede dejar varios comentarios en la misma experiencia y no se pueden editar.
+
+- `GET /api/shop/experiences/:slug/comments?page=&limit=` es público (`limit` máximo 50). Devuelve `items`, `summary` (`count`, `average` con un decimal y `distribution` por estrellas) y `pagination`. Si hay sesión (`optionalAuthenticate`), cada comentario indica `canDelete`; una cookie inválida no da error, se lista como anónimo. Responde con `Cache-Control: private, no-store`.
+- `POST` pasa por `authenticate`: sin access token válido responde 401 y el cliente renueva la sesión con `/api/auth/refresh`. Cuerpo estricto `{ "rating": 1-5, "body": "..." }`; el autor sale siempre de la sesión, nunca del cuerpo. Límite de 30 comentarios cada 15 minutos.
+- `DELETE` pasa por `authenticate`: solo el autor o un ADMIN (moderación); otro usuario recibe 403. Un id de otra experiencia devuelve 404.
+- Solo se comenta en experiencias publicadas y visibles en el shop. Los comentarios muestran el nombre (nombre e inicial del apellido) y el avatar del autor, nunca su email ni su id.
 
 ## Gestión de usuarios en PostgreSQL
 

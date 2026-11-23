@@ -84,6 +84,21 @@ Con una cuenta promovida a ADMIN desde PostgreSQL según `README.md`:
 
 Un token USER recibe 403 en las rutas administrativas. Los hashes nunca aparecen en las respuestas. Para probar propiedad, registra una segunda cuenta y conserva sus IDs antes de volver a usar el token de la primera.
 
+## Comentarios de una experiencia
+
+Listar es público: `GET {{baseUrl}}/api/shop/experiences/{{slug}}/comments?page=1&limit=10` devuelve los comentarios, la media y el reparto por estrellas.
+
+Para comentar inicia sesión antes (las cookies las gestiona Postman) y envía `POST {{baseUrl}}/api/shop/experiences/{{slug}}/comments` con `X-Requested-With: XMLHttpRequest`:
+
+```json
+{
+  "rating": 5,
+  "body": "Muy buen ambiente y bien organizado."
+}
+```
+
+Devuelve 201. Sin sesión devuelve 401; una valoración fuera de 1-5, un texto vacío o campos extra como `userId` devuelven 400. Para borrar: `DELETE {{baseUrl}}/api/shop/experiences/{{slug}}/comments/{{commentId}}` con `X-Requested-With`; solo el autor o un ADMIN (si no, 403).
+
 ## Gestión completa de usuarios (ADMIN)
 
 La ruta base es `{{baseUrl}}/api/users` y todos estos ejemplos usan la cookie de sesión de un ADMIN.
