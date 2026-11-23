@@ -11,6 +11,7 @@ import { MensajeError } from '../../../../shared/components/error-state/mensaje-
 import { BookingPanel } from '../../components/booking-panel/booking-panel';
 import { DeparturePicker } from '../../components/departure-picker/departure-picker';
 import { EventAgent } from '../../components/event-agent/event-agent';
+import { ExperienceComments } from '../../components/experience-comments/experience-comments';
 
 const parseId = (value: string | undefined): number | null => {
   const id = Number(value);
@@ -21,7 +22,7 @@ const parseId = (value: string | undefined): number | null => {
   selector: 'app-shop-experience-detail-page',
   imports: [
     RouterLink, NgxSkeletonLoaderComponent, LucideArrowLeft, LucideCalendarDays, LucideMapPin, LucideTag, LucideUser,
-    Carousel, CoverImage, MensajeError, BookingPanel, DeparturePicker, EventAgent,
+    Carousel, CoverImage, MensajeError, BookingPanel, DeparturePicker, EventAgent, ExperienceComments,
   ],
   template: `
     <section class="contenedor py-8 sm:py-10">
@@ -91,6 +92,9 @@ const parseId = (value: string | undefined): number | null => {
 
             <app-departure-picker [departures]="store.departures()" [selectedId]="store.selectedDepartureId()"
               (departureSelect)="selectDeparture($event)" />
+
+            <!-- Opiniones bajo las fechas: leer es público, comentar exige sesión. -->
+            <app-experience-comments [slug]="experience.slug" />
 
             @if (experience.host.description) {
               <section class="rounded-2xl border border-slate-200 bg-superficie p-5">
