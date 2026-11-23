@@ -13,7 +13,8 @@
     "migrate:shop": "node migrate-shop.js",
     "test": "node --test --test-concurrency=1 test/*.test.js",
     "seed": "node migrate.js && node seed.js",
-    "dev": "nodemon src/server.js"
+    "dev": "nodemon src/server.js",
+    "migrate:comments": "node migrate-comments.js"
   },
   "dependencies": {
     "argon2": "^0.45.1",

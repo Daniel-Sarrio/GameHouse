@@ -6,6 +6,7 @@ const generateSku = require('./src/services/utils/sku');
 const migrateAuth = require('./migrate-auth');
 const migrateSoftDelete = require('./migrate-soft-delete');
 const migrateShop = require('./migrate-shop');
+const migrateComments = require('./migrate-comments');
 
 async function migrateAllowedRoles(client) {
   // No se eliminan ni reasignan usuarios si una base antigua contiene roles no válidos.
@@ -80,8 +81,9 @@ async function migrate() {
       await migrateAllowedRoles(client);
       await migrateAuth(client);
       await migrateShop(client);
+      await migrateComments(client);
       await client.query('COMMIT');
-      console.log('Migración aplicada: catálogo, integridad asociativa, autenticación, perfiles e índices del shop.');
+      console.log('Migración aplicada: catálogo, integridad asociativa, autenticación, perfiles e índices del shop y comentarios.');
       return;
     }
     await client.query(`
@@ -376,6 +378,7 @@ async function migrate() {
     await migrateAllowedRoles(client);
     await migrateAuth(client);
     await migrateShop(client);
+    await migrateComments(client);
     await client.query('COMMIT');
     console.log('Migración de experiences y events completada.');
   } catch (error) {
