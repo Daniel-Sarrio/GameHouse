@@ -176,14 +176,16 @@ export class ExperienceComments {
   readonly deletingId = signal<number | null>(null);
 
   readonly summary = this.store.summary;
+  private readonly userId = computed(() => this.auth.user()?.id ?? null);
   readonly roundedAverage = computed(() => Math.round(this.summary().average ?? 0));
   readonly canSubmit = computed(() => !this.busy() && !!this.rating() && !!this.draft().trim());
 
   constructor() {
     // Recarga al cambiar de experiencia o de usuario: `canDelete` depende de la sesión.
+    // Solo cuenta el id: revalidar la sesión al recuperar el foco no debe recargar los comentarios.
     effect(() => {
       const slug = this.slug();
-      this.auth.user()?.id;
+      this.userId();
       untracked(() => void this.store.load(slug));
     });
     inject(DestroyRef).onDestroy(() => this.store.cancel());
