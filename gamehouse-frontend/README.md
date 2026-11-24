@@ -60,6 +60,7 @@ La gestión de usuarios pagina de 50 en 50 en el servidor; búsqueda y filtros a
 - **Home (`/`)**: tres carruseles (categorías, organizadores y lugares) con `FacetCarousel` + `FacetCard`. Cada tarjeta enlaza a `/tienda?category=ID`, `?host=ID` o `?location=ID` (deep-linking).
 - **Shop (`/tienda`)**: `ExperienceList` + `ExperienceCard`, filtros (`ShopFiltersPanel` compone tres `FilterGroup`), búsqueda por nombre, orden y paginación. En móvil los filtros se pliegan.
 - **Detalle (`/tienda/:slug`)**: carrusel de imágenes, categorías, organizador, lugares y selector de departures (fecha de inicio y fin, lugar, plazas y precio). La departure elegida se guarda en `?fecha=ID`. Debajo de las fechas, `ExperienceComments` muestra las opiniones: media y reparto por estrellas, listado paginado ("Ver más opiniones") y, con sesión, un formulario de valoración de 1 a 5 estrellas y comentario; sin sesión, un enlace a login que vuelve al detalle. El autor o un ADMIN pueden borrar un comentario. El estado vive en `CommentsStore` y se recarga al iniciar o cerrar sesión.
+- **Likes**: `LikeButton` aparece en cada tarjeta del shop (`ExperienceCard`, sobre la imagen y por encima del enlace de la tarjeta) y junto al título del detalle. Muestra el contador público; con sesión da o quita el like, y sin sesión lleva al login y vuelve a la misma página. `LikesStore` carga los likes del usuario (`GET /api/likes`) al iniciar sesión, los vacía al cerrarla y comparte el estado entre tarjeta y detalle, con actualización optimista que se revierte si la petición falla.
 
 La URL es la única fuente de verdad: `ShopPage` escucha `queryParamMap`, lo valida con `parseShopFilters` y llama a `ShopStore.loadExperiences`. Filtrar, buscar u ordenar navega con nuevos query params y vuelve a la página 1, así que recargar, compartir el enlace y atrás/adelante mantienen el estado. Los cambios de filtros usan `scroll: 'manual'` para no saltar arriba y la búsqueda usa `replaceUrl` para no llenar el historial.
 
@@ -86,6 +87,7 @@ Abre `http://localhost:4200`. Las URLs `apiUrl` y `agentUrl` apuntan al gateway 
 | --- | --- |
 | Home y shop | `GET /api/shop/categories`, `/hosts`, `/locations`, `/experiences?category=&host=&location=&search=&sort=&page=&limit=`, `/experiences/:slug`, `/experiences/:slug/departures` |
 | Comentarios | `GET /api/shop/experiences/:slug/comments`; con sesión `POST` y `DELETE /api/shop/experiences/:slug/comments/:id` |
+| Likes (con sesión) | `GET /api/likes`, `POST /api/likes/:slug`, `DELETE /api/likes/:slug` |
 | Login / sesión | `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/refresh`, `POST /api/auth/logout` |
 | Perfil propio | `GET/PATCH /api/profiles/me` |
 | Usuarios | `GET/POST /api/users`, `PATCH /api/users/:id` |

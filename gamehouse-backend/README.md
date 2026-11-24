@@ -64,6 +64,7 @@ Para una base vacía, aplica primero `database.sql` con tu cliente PostgreSQL. N
 | Perfiles | `GET /api/profiles/me`, `PATCH /api/profiles/me`, `GET /api/profiles/:id`, `PATCH /api/profiles/:id` |
 | Shop (público) | `GET /api/shop/categories`, `GET /api/shop/hosts`, `GET /api/shop/locations`, `GET /api/shop/experiences`, `GET /api/shop/experiences/:slug`, `GET /api/shop/experiences/:slug/departures` |
 | Comentarios | `GET /api/shop/experiences/:slug/comments` (público), `POST /api/shop/experiences/:slug/comments` y `DELETE /api/shop/experiences/:slug/comments/:id` (requieren sesión) |
+| Likes (requieren sesión) | `GET /api/likes`, `POST /api/likes/:slug`, `DELETE /api/likes/:slug` |
 | Usuarios (ADMIN) | `GET /api/users`, `GET /api/users/active`, `GET /api/users/deleted`, `GET /api/users/:id`, `POST /api/users`, `PATCH /api/users/:id`, `PATCH /api/users/:id/active`, `PATCH /api/users/:id/softdelete` |
 
 Las respuestas correctas usan `{ "success": true, "data": ... }`. Los errores usan `{ "success": false, "message": "...", "errors": [] }`.
@@ -146,6 +147,15 @@ Las rutas `/api/shop` son públicas y de solo lectura (`route → ctrl → servi
 - `POST` pasa por `authenticate`: sin access token válido responde 401 y el cliente renueva la sesión con `/api/auth/refresh`. Cuerpo estricto `{ "rating": 1-5, "body": "..." }`; el autor sale siempre de la sesión, nunca del cuerpo. Límite de 30 comentarios cada 15 minutos.
 - `DELETE` pasa por `authenticate`: solo el autor o un ADMIN (moderación); otro usuario recibe 403. Un id de otra experiencia devuelve 404.
 - Solo se comenta en experiencias publicadas y visibles en el shop. Los comentarios muestran el nombre (nombre e inicial del apellido) y el avatar del autor, nunca su email ni su id.
+
+### Likes
+
+`migrations/009_experience_likes.sql` (`npm run migrate:likes`, también incluido en `npm run migrate`) crea `experience_likes` con clave primaria `(experience_id, user_id)`: la base de datos impide que un usuario dé like dos veces a la misma experiencia, también con peticiones simultáneas. Quitar el like borra la fila; borrar el usuario o la experiencia elimina sus likes en cascada.
+
+- Todas las rutas de `/api/likes` pasan por `authenticate` (`router.use`): sin access token válido responden 401 y el cliente renueva la sesión con `/api/auth/refresh`. El usuario sale siempre de la sesión.
+- `GET /api/likes` devuelve `{ experienceIds }`: las experiencias a las que el usuario de la sesión ha dado like.
+- `POST /api/likes/:slug` da like (201) a una experiencia publicada; si ya lo tenía responde 409. `DELETE /api/likes/:slug` lo quita (200) o responde 404 si no existía. Ambas devuelven `{ experienceId, liked, likeCount }`. Límite de 120 operaciones cada 15 minutos.
+- El listado y el detalle del shop incluyen `likeCount` (público), sin revelar quién ha dado like.
 
 ## Gestión de usuarios en PostgreSQL
 

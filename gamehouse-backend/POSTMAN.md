@@ -99,6 +99,16 @@ Para comentar inicia sesión antes (las cookies las gestiona Postman) y envía `
 
 Devuelve 201. Sin sesión devuelve 401; una valoración fuera de 1-5, un texto vacío o campos extra como `userId` devuelven 400. Para borrar: `DELETE {{baseUrl}}/api/shop/experiences/{{slug}}/comments/{{commentId}}` con `X-Requested-With`; solo el autor o un ADMIN (si no, 403).
 
+## Likes a experiencias
+
+Todas las rutas exigen sesión (inicia sesión antes) y las escrituras `X-Requested-With: XMLHttpRequest`:
+
+- `POST {{baseUrl}}/api/likes/{{slug}}` da like: 201 con `{ experienceId, liked: true, likeCount }`. Repetirlo devuelve 409.
+- `DELETE {{baseUrl}}/api/likes/{{slug}}` quita el like: 200 con `liked: false`; sin like previo, 404.
+- `GET {{baseUrl}}/api/likes` devuelve `experienceIds` con tus likes.
+
+Sin sesión, todas devuelven 401. El contador público aparece como `likeCount` en `GET /api/shop/experiences` y en el detalle.
+
 ## Gestión completa de usuarios (ADMIN)
 
 La ruta base es `{{baseUrl}}/api/users` y todos estos ejemplos usan la cookie de sesión de un ADMIN.
