@@ -44,6 +44,8 @@ module.exports = {
   loginLimiter: createLimiter(20),
   // Frena el spam de comentarios: 30 por cada 15 minutos.
   commentLimiter: createLimiter(30),
+  // Dar y quitar like: margen amplio para un uso normal, frena scripts que inflen contadores.
+  likeLimiter: createLimiter(120),
   registerLimiter: createLimiter(10),
   // Con un access token de 1 h, un uso legítimo apenas renueva; el límite frena la fuerza bruta.
   refreshLimiter: createLimiter(60),

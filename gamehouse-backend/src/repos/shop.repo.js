@@ -56,7 +56,8 @@ const DEPARTURES_LATERAL = `LEFT JOIN LATERAL (
   ) dep ON TRUE`;
 const SUMMARY_COLUMNS = `e.id, e.name, e.slug, e.description, e.image_url,
   h.id AS host_id, h.name AS host_name, h.slug AS host_slug,
-  cat.categories, dep.locations, dep.min_price, dep.next_departure, dep.departure_count`;
+  cat.categories, dep.locations, dep.min_price, dep.next_departure, dep.departure_count,
+  (SELECT count(*)::int FROM experience_likes lk WHERE lk.experience_id = e.id) AS like_count`;
 
 const findExperiences = async (filters) => {
   const { where, params } = buildFilters(filters);

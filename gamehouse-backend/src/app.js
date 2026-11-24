@@ -17,6 +17,7 @@ const profilesRoutes = require('./routes/profiles.routes');
 const userRoutes = require('./routes/user.routes');
 const shopRoutes = require('./routes/shop.routes');
 const commentsRoutes = require('./routes/comments.routes');
+const likesRoutes = require('./routes/likes.routes');
 const { authenticate } = require('./middleware/authentication');
 const { adminWrites, authorizeRoles } = require('./middleware/authorization');
 const AppError = require('./services/utils/app-error');
@@ -66,6 +67,8 @@ app.use('/api/events', adminWrites, eventsRoutes);
 app.use('/api/shop', shopRoutes);
 // Comentarios: leer es público; crear y borrar requieren sesión (middleware authenticate).
 app.use('/api/shop/experiences/:slug/comments', commentsRoutes);
+// Likes: todas sus rutas pasan por el middleware authenticate.
+app.use('/api/likes', likesRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
