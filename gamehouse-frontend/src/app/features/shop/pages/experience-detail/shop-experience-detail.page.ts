@@ -12,6 +12,7 @@ import { BookingPanel } from '../../components/booking-panel/booking-panel';
 import { DeparturePicker } from '../../components/departure-picker/departure-picker';
 import { EventAgent } from '../../components/event-agent/event-agent';
 import { ExperienceComments } from '../../components/experience-comments/experience-comments';
+import { LikeButton } from '../../components/like-button/like-button';
 
 const parseId = (value: string | undefined): number | null => {
   const id = Number(value);
@@ -22,7 +23,7 @@ const parseId = (value: string | undefined): number | null => {
   selector: 'app-shop-experience-detail-page',
   imports: [
     RouterLink, NgxSkeletonLoaderComponent, LucideArrowLeft, LucideCalendarDays, LucideMapPin, LucideTag, LucideUser,
-    Carousel, CoverImage, MensajeError, BookingPanel, DeparturePicker, EventAgent, ExperienceComments,
+    Carousel, CoverImage, MensajeError, BookingPanel, DeparturePicker, EventAgent, ExperienceComments, LikeButton,
   ],
   template: `
     <section class="contenedor py-8 sm:py-10">
@@ -62,7 +63,10 @@ const parseId = (value: string | undefined): number | null => {
                   </li>
                 }
               </ul>
-              <h1 class="mt-3 text-3xl leading-tight font-bold sm:text-4xl">{{ experience.name }}</h1>
+              <div class="mt-3 flex flex-wrap items-start justify-between gap-3">
+                <h1 class="m-0 text-3xl leading-tight font-bold sm:text-4xl">{{ experience.name }}</h1>
+                <app-like-button [experience]="experience" />
+              </div>
               <dl class="mt-4 grid gap-3 text-sm text-slate-600 sm:grid-cols-3">
                 <div class="flex items-start gap-2"><svg lucideUser [size]="16" aria-hidden="true" class="mt-0.5 shrink-0"></svg>
                   <div><dt class="sr-only">Organizador</dt>

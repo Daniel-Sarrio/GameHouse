@@ -42,6 +42,8 @@ export interface ShopExperience {
   minPrice: number | null;
   nextDeparture: string | null;
   departureCount: number;
+  /** Número público de likes; si el usuario actual le ha dado like lo sabe LikesStore. */
+  likeCount: number;
 }
 
 export interface ShopExperienceDetail extends ShopExperience {

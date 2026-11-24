@@ -4,13 +4,16 @@ import { LucideCalendarDays, LucideMapPin, LucideUser } from '@lucide/angular';
 import { ShopExperience } from '../../../../core/models/shop.model';
 import { dateText, priceText } from '../../../../core/utils/shop.utils';
 import { CoverImage } from '../../../../shared/components/cover-image/cover-image';
+import { LikeButton } from '../like-button/like-button';
 
 @Component({
   selector: 'app-experience-card',
-  imports: [RouterLink, CoverImage, LucideCalendarDays, LucideMapPin, LucideUser],
+  imports: [RouterLink, CoverImage, LikeButton, LucideCalendarDays, LucideMapPin, LucideUser],
   template: `
     <article class="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-superficie shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md">
       <app-cover-image class="aspect-[16/10]" [url]="experience().imageUrl" [alt]="'Imagen de ' + experience().name" />
+      <!-- z-10: el botón queda por encima del enlace que cubre la tarjeta (::after). -->
+      <app-like-button class="absolute top-3 right-3 z-10" [experience]="experience()" [compact]="true" />
       <div class="flex flex-1 flex-col gap-3 p-5">
         @if (experience().categories.length) {
           <ul class="m-0 flex list-none flex-wrap gap-1.5 p-0" aria-label="Categorías">
