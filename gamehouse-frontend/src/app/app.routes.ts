@@ -52,6 +52,12 @@ export const routes: Routes = [
         loadChildren: () => import('./features/roles/roles.routes').then((m) => m.ROLES_ROUTES),
       },
       {
+        path: 'opiniones',
+        canActivate: [adminGuard],
+        title: 'Opiniones · GameHouse',
+        loadChildren: () => import('./features/reviews/reviews.routes').then((m) => m.REVIEWS_ROUTES),
+      },
+      {
         path: 'eventos',
         canActivate: [adminGuard],
         canActivateChild: [adminGuard],

@@ -81,6 +81,12 @@ export class DashboardPage {
       description: 'Gestiona las fechas y la disponibilidad de cada evento.',
     },
     {
+      path: '/opiniones',
+      symbol: '★',
+      title: 'Opiniones',
+      description: 'Lee las opiniones y analízalas con IA: lo positivo, lo negativo y la balanza.',
+    },
+    {
       path: '/categorias',
       symbol: '#',
       title: 'Categorías',
