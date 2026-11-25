@@ -244,3 +244,26 @@ test('el listado de comentarios se puede ordenar por valoración', async () => {
   assert.deepEqual(await ratings('rating_asc'), [2, 4, 5]);
   assert.equal((await request('GET', `${commentsUrl}?sort=DROP`)).status, 400);
 });
+
+test('varios comentarios seguidos mientras se analiza no abren llamadas al modelo en paralelo', async () => {
+  fakeAgent.delayMs = 300;
+  let concurrent = 0;
+  let maxConcurrent = 0;
+  const original = fakeAgent.reply;
+  agent.on('request', (req, res) => {
+    concurrent += 1;
+    maxConcurrent = Math.max(maxConcurrent, concurrent);
+    res.on('finish', () => { concurrent -= 1; });
+  });
+  for (const body of ['Primera', 'Segunda', 'Tercera']) {
+    assert.equal((await comment(alice, 5, body)).status, 201);
+  }
+  await settle();
+  assert.equal(maxConcurrent, 1);
+  // El análisis guardado se hizo con los comentarios de entonces: la siguiente consulta lo pone al día.
+  const next = await insights();
+  assert.equal(next.refreshing, true);
+  await settle();
+  assert.equal((await insights()).analyzedCount, 6);
+  fakeAgent.reply = original;
+});

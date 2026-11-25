@@ -67,10 +67,13 @@ const generate = async (experience, signature) => {
   return repo.upsert(experience.id, { signature, ...sanitize(result, comments) });
 };
 
-/** Lanza la generación (una sola por experiencia y conjunto de comentarios) y registra sus fallos. */
+/**
+ * Lanza la generación y registra sus fallos. Como máximo una por experiencia: si llegan comentarios nuevos
+ * mientras se analiza, no se abre otra llamada al modelo en paralelo; el análisis guardado queda con la firma
+ * antigua y la siguiente consulta lo regenera.
+ */
 const generateOnce = (experience, signature) => {
-  const key = `${experience.id}:${signature}`;
-  if (!inFlight.has(key)) {
+  if (!inFlight.has(experience.id)) {
     const task = generate(experience, signature)
       .then((row) => { failedAt.delete(experience.id); return row; })
       .catch((error) => {
@@ -78,10 +81,10 @@ const generateOnce = (experience, signature) => {
         console.error('Comment insights failed:', { status: error.statusCode, experienceId: experience.id });
         throw error;
       })
-      .finally(() => inFlight.delete(key));
-    inFlight.set(key, task);
+      .finally(() => inFlight.delete(experience.id));
+    inFlight.set(experience.id, task);
   }
-  return inFlight.get(key);
+  return inFlight.get(experience.id);
 };
 
 const toResponse = (row, { stale, refreshing = false }) => ({
@@ -123,7 +126,7 @@ const refreshInBackground = (slug) => {
   getInsights(slug).catch(() => undefined);
 };
 
-const isGenerating = (experienceId) => [...inFlight.keys()].some((key) => key.startsWith(`${experienceId}:`));
+const isGenerating = (experienceId) => inFlight.has(experienceId);
 
 /** Análisis completo para el panel de administración, con lo positivo, lo negativo y la balanza de sentimiento. */
 const toAdminResponse = (row, { fresh }) => {
