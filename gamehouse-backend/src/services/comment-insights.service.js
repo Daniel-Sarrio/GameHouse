@@ -42,7 +42,20 @@ const sanitize = (result, comments) => {
       mentions: Number.isInteger(aspect.mentions) ? Math.min(Math.max(aspect.mentions, 1), analyzedCount) : 1,
     }));
   const summary = typeof result?.summary === 'string' ? result.summary.trim().slice(0, 280) : '';
-  return { analyzedCount, recommendCount, aspects, summary };
+  const points = (list) => [...new Set((Array.isArray(list) ? list : [])
+    .filter((item) => typeof item === 'string').map((item) => item.trim().slice(0, 100)).filter(Boolean))].slice(0, 5);
+  // La balanza debe sumar exactamente los comentarios analizados; si no, se deduce de las valoraciones.
+  const counts = ['positive', 'neutral', 'negative'].map((key) => result?.sentiment?.[key]);
+  const validSentiment = counts.every((value) => Number.isInteger(value) && value >= 0)
+    && counts.reduce((total, value) => total + value, 0) === analyzedCount;
+  const sentiment = validSentiment
+    ? { positive: counts[0], neutral: counts[1], negative: counts[2] }
+    : {
+      positive: comments.filter((comment) => comment.rating >= 4).length,
+      neutral: comments.filter((comment) => comment.rating === 3).length,
+      negative: comments.filter((comment) => comment.rating <= 2).length,
+    };
+  return { analyzedCount, recommendCount, aspects, summary, positives: points(result?.positives), negatives: points(result?.negatives), sentiment };
 };
 
 const generate = async (experience, signature) => {
@@ -110,10 +123,64 @@ const refreshInBackground = (slug) => {
   getInsights(slug).catch(() => undefined);
 };
 
+const isGenerating = (experienceId) => [...inFlight.keys()].some((key) => key.startsWith(`${experienceId}:`));
+
+/** Análisis completo para el panel de administración, con lo positivo, lo negativo y la balanza de sentimiento. */
+const toAdminResponse = (row, { fresh }) => {
+  const { positive, neutral, negative } = {
+    positive: row.sentiment_positive, neutral: row.sentiment_neutral, negative: row.sentiment_negative,
+  };
+  const total = positive + neutral + negative;
+  return {
+    ...toResponse(row, { stale: !fresh }),
+    positives: row.positives,
+    negatives: row.negatives,
+    sentiment: {
+      positive,
+      neutral,
+      negative,
+      // De -1 (todo negativo) a 1 (todo positivo): la posición de la balanza.
+      score: total ? Math.round(((positive - negative) / total) * 100) / 100 : 0,
+    },
+  };
+};
+
+/**
+ * Estado del análisis de una experiencia para el administrador (`experience` ya validada, publicada o no):
+ * none (nunca analizada), ready (fresh si incluye todos los comentarios actuales), y si se está generando.
+ */
+const getAdminAnalysis = async (experience) => {
+  const [{ count }, signature, cached] = await Promise.all([
+    commentsRepo.summarize(experience.id), repo.signature(experience.id), repo.findByExperience(experience.id),
+  ]);
+  const lastFailure = failedAt.get(experience.id);
+  return {
+    commentCount: count,
+    generating: isGenerating(experience.id),
+    lastFailedAt: lastFailure ? new Date(lastFailure).toISOString() : null,
+    analysis: cached ? toAdminResponse(cached, { fresh: cached.signature === signature }) : null,
+  };
+};
+
+/**
+ * El administrador pide analizar las opiniones ahora: se lanza en segundo plano aunque el análisis esté al día
+ * y sin esperar la pausa tras un fallo. Basta con una opinión. El cliente consulta getAdminAnalysis hasta que termine.
+ */
+const analyzeNow = async (experience) => {
+  const { count } = await commentsRepo.summarize(experience.id);
+  if (!count) throw new AppError('Esta experiencia todavía no tiene opiniones que analizar.', 409);
+  failedAt.delete(experience.id);
+  // generateOnce siempre genera (aunque el análisis esté al día) y une las peticiones simultáneas.
+  if (!isGenerating(experience.id)) generateOnce(experience, await repo.signature(experience.id)).catch(() => undefined);
+  return getAdminAnalysis(experience);
+};
+
 /** Solo para pruebas: espera a que terminen las generaciones en curso. */
 const settle = () => Promise.allSettled([...inFlight.values()]);
 
 /** Solo para pruebas: olvida los fallos recientes del agente. */
 const resetFailures = () => failedAt.clear();
 
-module.exports = { getInsights, resetFailures, settle, refreshInBackground, sanitize, MIN_COMMENTS, ASPECT_LABELS };
+module.exports = {
+  getInsights, getAdminAnalysis, analyzeNow, resetFailures, settle, refreshInBackground, sanitize, MIN_COMMENTS, ASPECT_LABELS,
+};

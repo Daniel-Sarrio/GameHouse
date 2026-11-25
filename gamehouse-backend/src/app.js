@@ -18,6 +18,7 @@ const userRoutes = require('./routes/user.routes');
 const shopRoutes = require('./routes/shop.routes');
 const commentsRoutes = require('./routes/comments.routes');
 const likesRoutes = require('./routes/likes.routes');
+const reviewsRoutes = require('./routes/reviews.routes');
 const { authenticate } = require('./middleware/authentication');
 const { adminWrites, authorizeRoles } = require('./middleware/authorization');
 const AppError = require('./services/utils/app-error');
@@ -69,6 +70,8 @@ app.use('/api/shop', shopRoutes);
 app.use('/api/shop/experiences/:slug/comments', commentsRoutes);
 // Likes: todas sus rutas pasan por el middleware authenticate.
 app.use('/api/likes', likesRoutes);
+// Opiniones y análisis IA en el panel de administración (authenticate + ADMIN).
+app.use('/api/reviews', reviewsRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
