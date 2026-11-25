@@ -64,6 +64,7 @@ Para una base vacía, aplica primero `database.sql` con tu cliente PostgreSQL. N
 | Perfiles | `GET /api/profiles/me`, `PATCH /api/profiles/me`, `GET /api/profiles/:id`, `PATCH /api/profiles/:id` |
 | Shop (público) | `GET /api/shop/categories`, `GET /api/shop/hosts`, `GET /api/shop/locations`, `GET /api/shop/experiences`, `GET /api/shop/experiences/:slug`, `GET /api/shop/experiences/:slug/departures` |
 | Comentarios | `GET /api/shop/experiences/:slug/comments` (público), `POST /api/shop/experiences/:slug/comments` y `DELETE /api/shop/experiences/:slug/comments/:id` (requieren sesión), `GET /api/shop/experiences/:slug/comments/insights` (análisis IA, público) |
+| Opiniones (ADMIN) | `GET /api/reviews/experiences`, `GET /api/reviews/experiences/:id/comments`, `GET` y `POST /api/reviews/experiences/:id/analysis`, `DELETE /api/reviews/comments/:id` |
 | Likes (requieren sesión) | `GET /api/likes`, `POST /api/likes/:slug`, `DELETE /api/likes/:slug` |
 | Usuarios (ADMIN) | `GET /api/users`, `GET /api/users/active`, `GET /api/users/deleted`, `GET /api/users/:id`, `POST /api/users`, `PATCH /api/users/:id`, `PATCH /api/users/:id/active`, `PATCH /api/users/:id/softdelete` |
 
@@ -156,6 +157,18 @@ El agente IA (`gamehouse-agent`) lee los comentarios de una experiencia y devuel
 - `migrations/010_comment_insights.sql` (`npm run migrate:insights`, incluida en `npm run migrate`) crea `comment_insights`, la caché por experiencia. Su `signature` es la huella de los comentarios visibles: al publicar o borrar uno cambia y el análisis se regenera en segundo plano. Así el modelo no se llama en cada visita. Hay una sola generación a la vez por experiencia y, si el agente falla, no se reintenta durante 5 minutos.
 - El backend llama al agente a través de la gateway (`AGENT_API_URL`, por defecto `http://localhost:4000/api/agent`) con la cabecera `X-Internal-Token` (`AGENT_INTERNAL_TOKEN`, el mismo valor que en el `.env` del agente). Solo envía la valoración y el texto de los 100 comentarios más recientes: nunca autores, ids ni emails. La respuesta del agente se vuelve a validar antes de guardarla.
 - `GET .../comments` acepta `sort=recent|rating_desc|rating_asc`.
+- Como máximo hay un análisis en curso por experiencia: si llegan comentarios mientras se analiza, la siguiente consulta lo pone al día.
+- `migrations/011_comment_insights_sentiment.sql` añade `positives`, `negatives` y la balanza de sentimiento (`sentiment_positive`, `sentiment_neutral`, `sentiment_negative`). El agente los genera en la misma llamada. Si la balanza no suma los comentarios analizados, se deduce de las valoraciones: 4-5 positivas, 3 neutras y 1-2 negativas.
+
+### Opiniones en el panel de administración
+
+`/api/reviews` pasa por `authenticate` y `authorizeRoles('ADMIN')` en todas sus rutas:
+
+- `GET /experiences`: experiencias no eliminadas (publicadas o no) con opiniones, su media, la fecha de la última opinión y si el análisis está al día (`analysisFresh`).
+- `GET /experiences/:id/comments?page=&limit=&sort=`: comentarios con el nombre y el email del autor, para moderar.
+- `GET /experiences/:id/analysis`: `{ commentCount, generating, lastFailedAt, analysis }`. `analysis` incluye `positives`, `negatives` y `sentiment` (`positive`, `neutral`, `negative` y `score` de -1 a 1).
+- `POST /experiences/:id/analysis`: lanza el análisis en segundo plano (202) aunque esté al día y sin esperar la pausa tras un fallo. Basta con una opinión; sin ninguna, responde 409. Límite de 20 cada 15 minutos.
+- `DELETE /comments/:id`: borrado lógico de cualquier comentario.
 
 ### Likes
 

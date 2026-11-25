@@ -81,12 +81,21 @@ npm start
 
 Abre `http://localhost:4200`. Las URLs `apiUrl` y `agentUrl` apuntan al gateway (`http://localhost:4000`) y se cambian en `src/environments/environment.ts` y `src/environments/environment.development.ts`; permite el origen del frontend en el CORS del backend y del agente. Necesitas una cuenta existente: el registro público crea USER y el README del backend explica cómo preparar el primer ADMIN. No se incluyen credenciales de administrador en el frontend.
 
+## Opiniones (ADMIN)
+
+`/opiniones` (protegida con `adminGuard`; enlace en el menú y en el dashboard) lista las experiencias con opiniones, publicadas o no, y su estado de análisis. Al elegir una (`/opiniones?experiencia=ID`) se muestran:
+
+- El botón **Analizar opiniones**: el agente IA trabaja en segundo plano y `ReviewsStore` consulta cada 4 segundos hasta que termina.
+- **Lo positivo** y **lo negativo** que repiten los usuarios, el resumen y la **balanza** (`SentimentBalanceChart`): un SVG cuyo brazo se inclina hacia el platillo con más peso, con el veredicto ("Mayormente positivo", "Equilibrado"…) y el reparto de positivas, neutras y negativas.
+- Los comentarios con el email del autor, orden y paginación, y la opción de borrar (moderación).
+
 ## Endpoints usados
 
 | Acción | Método y ruta |
 | --- | --- |
 | Home y shop | `GET /api/shop/categories`, `/hosts`, `/locations`, `/experiences?category=&host=&location=&search=&sort=&page=&limit=`, `/experiences/:slug`, `/experiences/:slug/departures` |
 | Comentarios | `GET /api/shop/experiences/:slug/comments`; con sesión `POST` y `DELETE /api/shop/experiences/:slug/comments/:id` |
+| Opiniones (ADMIN) | `GET /api/reviews/experiences`, `/experiences/:id/comments`, `GET`/`POST /experiences/:id/analysis`, `DELETE /api/reviews/comments/:id` |
 | Likes (con sesión) | `GET /api/likes`, `POST /api/likes/:slug`, `DELETE /api/likes/:slug` |
 | Login / sesión | `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/refresh`, `POST /api/auth/logout` |
 | Perfil propio | `GET/PATCH /api/profiles/me` |

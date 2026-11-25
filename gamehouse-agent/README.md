@@ -76,7 +76,7 @@ Respuesta: `{ "reply": "..." }`
 }
 ```
 
-Respuesta: `{ "analyzedCount", "recommendCount", "aspects": [{ "key", "rating", "mentions" }], "summary" }`. Acepta hasta 100 comentarios de 500 caracteres (80 kB). El modelo responde en JSON y se valida: `recommendCount` se cuenta en el servidor a partir de un booleano por comentario (con la valoración como alternativa), las claves de aspecto deben estar en la lista cerrada (`src/types/insights.types.ts`), las valoraciones se acotan de 1 a 5 en pasos de 0,5 y el resumen se limpia de Markdown. Se pide poco esfuerzo de razonamiento, hasta 6000 tokens y una espera máxima de 90 s, porque los modelos de razonamiento pueden tardar y gastar tokens pensando.
+Respuesta: `{ "analyzedCount", "recommendCount", "aspects": [{ "key", "rating", "mentions" }], "summary", "positives", "negatives", "sentiment": { "positive", "neutral", "negative" } }`. `positives` y `negatives` son hasta 5 frases cortas. El sentimiento se clasifica comentario a comentario y se cuenta en el servidor. Acepta hasta 100 comentarios de 500 caracteres (80 kB). El modelo responde en JSON y se valida: `recommendCount` se cuenta en el servidor a partir de un booleano por comentario (con la valoración como alternativa), las claves de aspecto deben estar en la lista cerrada (`src/types/insights.types.ts`), las valoraciones se acotan de 1 a 5 en pasos de 0,5 y el resumen se limpia de Markdown. El análisis desactiva el razonamiento del modelo (`reasoning: { enabled: false }`): extraer el JSON no lo necesita. Con razonamiento, incluso en esfuerzo bajo, el modelo gratuito tardaba más de 75 s; sin él, entre 8 y 25 s. Se permiten hasta 3000 tokens y 90 s de espera.
 
 ## Seguridad
 
