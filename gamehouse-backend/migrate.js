@@ -8,6 +8,7 @@ const migrateSoftDelete = require('./migrate-soft-delete');
 const migrateShop = require('./migrate-shop');
 const migrateComments = require('./migrate-comments');
 const migrateLikes = require('./migrate-likes');
+const migrateInsights = require('./migrate-insights');
 
 async function migrateAllowedRoles(client) {
   // No se eliminan ni reasignan usuarios si una base antigua contiene roles no válidos.
@@ -84,8 +85,9 @@ async function migrate() {
       await migrateShop(client);
       await migrateComments(client);
       await migrateLikes(client);
+      await migrateInsights(client);
       await client.query('COMMIT');
-      console.log('Migración aplicada: catálogo, integridad asociativa, autenticación, perfiles e índices del shop, comentarios y likes.');
+      console.log('Migración aplicada: catálogo, integridad asociativa, autenticación, perfiles e índices del shop, comentarios, likes y análisis de opiniones.');
       return;
     }
     await client.query(`
@@ -382,6 +384,7 @@ async function migrate() {
     await migrateShop(client);
     await migrateComments(client);
     await migrateLikes(client);
+    await migrateInsights(client);
     await client.query('COMMIT');
     console.log('Migración de experiences y events completada.');
   } catch (error) {
