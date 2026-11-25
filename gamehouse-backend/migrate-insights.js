@@ -3,6 +3,7 @@ const path = require('path');
 
 async function migrateInsights(client) {
   await client.query(fs.readFileSync(path.join(__dirname, 'migrations', '010_comment_insights.sql'), 'utf8'));
+  await client.query(fs.readFileSync(path.join(__dirname, 'migrations', '011_comment_insights_sentiment.sql'), 'utf8'));
 }
 
 async function main() {
