@@ -12,6 +12,8 @@ const bcrypt = require('bcryptjs');
 process.env.JWT_SECRET = randomBytes(48).toString('hex');
 process.env.JWT_EXPIRES_IN = '1h';
 process.env.CORS_ORIGINS = 'http://localhost:4200';
+// Las pruebas nunca llaman al agente IA real (ni gastan llamadas al modelo).
+process.env.AGENT_INTERNAL_TOKEN = '';
 const pool = require('../src/config/database');
 const control = new Pool({ ...pool.options, password: pool.options.password });
 const schema = `auth_test_${randomBytes(8).toString('hex')}`;
