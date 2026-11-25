@@ -2,6 +2,7 @@ const { z } = require('zod');
 const { slugParamsSchema } = require('./shop-validation');
 
 const COMMENT_MAX_LENGTH = 1000;
+const COMMENT_SORTS = ['recent', 'rating_desc', 'rating_asc'];
 
 // Solo se aceptan la valoración y el texto: el autor y la experiencia salen de la sesión y de la URL.
 const commentBodySchema = z.strictObject({
@@ -12,8 +13,9 @@ const commentBodySchema = z.strictObject({
 const commentQuerySchema = z.strictObject({
   page: z.coerce.number().int().min(1).max(10000).default(1),
   limit: z.coerce.number().int().min(1).max(50).default(10),
+  sort: z.enum(COMMENT_SORTS).default('recent'),
 });
 
 const commentParamsSchema = slugParamsSchema.extend({ id: z.coerce.number().int().positive().max(2147483647) });
 
-module.exports = { commentBodySchema, commentQuerySchema, commentParamsSchema, COMMENT_MAX_LENGTH };
+module.exports = { commentBodySchema, commentQuerySchema, commentParamsSchema, COMMENT_MAX_LENGTH, COMMENT_SORTS };

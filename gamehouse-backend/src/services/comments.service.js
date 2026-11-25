@@ -1,6 +1,7 @@
 const repo = require('../repos/comments.repo');
 const shopRepo = require('../repos/shop.repo');
 const Comment = require('../models/comment.model');
+const insights = require('./comment-insights.service');
 const AppError = require('./utils/app-error');
 const validateData = require('./utils/validate-data');
 const { commentBodySchema, commentQuerySchema } = require('../middleware/comment-validation');
@@ -14,15 +15,16 @@ const findVisibleExperience = async (slug) => {
 
 /** Listado público paginado con resumen de valoraciones. `viewer` es el usuario autenticado, si lo hay. */
 const listComments = async (slug, query, viewer = null) => {
-  const { page, limit } = validateData(commentQuerySchema, query);
+  const { page, limit, sort } = validateData(commentQuerySchema, query);
   const experience = await findVisibleExperience(slug);
   const [rows, summary] = await Promise.all([
-    repo.findByExperience(experience.id, { limit, offset: (page - 1) * limit }),
+    repo.findByExperience(experience.id, { limit, offset: (page - 1) * limit, sort }),
     repo.summarize(experience.id),
   ]);
   return {
     items: rows.map((row) => new Comment(row, viewer)),
     summary,
+    sort,
     pagination: { page, limit, total: summary.count, totalPages: Math.max(1, Math.ceil(summary.count / limit)) },
   };
 };
@@ -33,6 +35,8 @@ const createComment = async (slug, data, user) => {
   const { rating, body } = validateData(commentBodySchema, data);
   const experience = await findVisibleExperience(slug);
   const row = await repo.create({ experienceId: experience.id, userId: user.id, rating, body });
+  // El análisis del agente IA queda desactualizado: se regenera en segundo plano.
+  insights.refreshInBackground(slug);
   return new Comment(row, user);
 };
 
@@ -45,6 +49,7 @@ const deleteComment = async (slug, id, user) => {
     throw new AppError('You do not have permission to access this resource', 403);
   }
   if (!await repo.softDelete(id)) throw new AppError('Comentario no encontrado.', 404);
+  insights.refreshInBackground(slug);
   return { id, deleted: true };
 };
 

@@ -9,6 +9,8 @@ const { commentBodySchema, commentQuerySchema, commentParamsSchema } = require('
 // La respuesta depende del usuario (canDelete): ningún proxy ni caché compartida debe guardarla.
 router.use((req, res, next) => { res.set('Cache-Control', 'private, no-store'); next(); });
 
+// Análisis de las opiniones hecho por el agente IA (público, en caché hasta que cambien los comentarios).
+router.get('/insights', validate({ params: slugParamsSchema }), ctrl.insights);
 // Leer es público; con sesión se marca qué comentarios puede borrar el usuario.
 router.get('/', optionalAuthenticate, validate({ params: slugParamsSchema, query: commentQuerySchema }), ctrl.list);
 // Escribir y borrar exigen sesión: authenticate responde 401 sin access token válido.

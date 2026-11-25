@@ -3,9 +3,16 @@ const pool = require('../config/database');
 const SELECT = `SELECT c.id, c.rating, c.body, c.created_at, c.user_id, p.first_name, p.last_name, p.avatar_url
   FROM comments c LEFT JOIN profiles p ON p.user_id = c.user_id`;
 
-const findByExperience = async (experienceId, { limit, offset }) => (await pool.query(
+// Lista blanca: el cliente elige una clave, nunca un fragmento SQL.
+const ORDER_BY = {
+  recent: 'c.created_at DESC, c.id DESC',
+  rating_desc: 'c.rating DESC, c.created_at DESC, c.id DESC',
+  rating_asc: 'c.rating ASC, c.created_at DESC, c.id DESC',
+};
+
+const findByExperience = async (experienceId, { limit, offset, sort = 'recent' }) => (await pool.query(
   `${SELECT} WHERE c.experience_id = $1 AND c.deleted_at IS NULL
-    ORDER BY c.created_at DESC, c.id DESC LIMIT $2 OFFSET $3`,
+    ORDER BY ${ORDER_BY[sort] || ORDER_BY.recent} LIMIT $2 OFFSET $3`,
   [experienceId, limit, offset],
 )).rows;
 
