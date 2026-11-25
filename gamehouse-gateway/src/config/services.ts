@@ -21,8 +21,9 @@ export const services: ServiceRoute[] = [
     name: 'agent',
     prefix: '/api/agent',
     target: url(process.env.AGENT_URL, 'http://localhost:3001'),
-    // El agente corta a los 20 s; dejamos margen para que su propio error llegue al cliente.
-    timeoutMs: 25_000,
+    // El chat corta a los 20 s, pero el análisis de opiniones (que pide el backend en segundo plano)
+    // puede esperar al modelo hasta 90 s. Se deja margen para que el error del propio agente llegue.
+    timeoutMs: 100_000,
     stripCookies: true,
   },
   {
