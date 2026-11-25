@@ -11,6 +11,8 @@ export interface GetOptions {
   params?: Record<string, QueryValue>;
   /** Al abortar se cancela la petición HTTP y la promesa se rechaza con un AbortError. */
   signal?: AbortSignal;
+  /** Tiempo máximo de espera; por defecto environment.apiTimeoutMs. */
+  timeoutMs?: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -20,7 +22,7 @@ export class ApiService {
 
   get<T>(path: string, options: GetOptions = {}): Promise<T> {
     const params = this.toParams(options.params);
-    return this.send(this.http.get<T>(this.url(path), { params }), options.signal);
+    return this.send(this.http.get<T>(this.url(path), { params }), options.signal, options.timeoutMs);
   }
 
   post<T>(path: string, body: unknown): Promise<T> {
@@ -52,12 +54,12 @@ export class ApiService {
     return params;
   }
 
-  private async send<T>(request: Observable<T>, signal?: AbortSignal): Promise<T> {
+  private async send<T>(request: Observable<T>, signal?: AbortSignal, timeoutMs = environment.apiTimeoutMs): Promise<T> {
     if (signal?.aborted) throw abortError();
     // Desuscribirse cancela la petición en curso: la respuesta antigua nunca llega al store.
     const cancellable = signal ? request.pipe(takeUntil(fromEvent(signal, 'abort'))) : request;
     try {
-      return await firstValueFrom(cancellable.pipe(timeout(environment.apiTimeoutMs)));
+      return await firstValueFrom(cancellable.pipe(timeout(timeoutMs)));
     } catch (error) {
       if (error instanceof EmptyError && signal?.aborted) throw abortError();
       if (error instanceof Error && error.name === 'TimeoutError') {

@@ -1,7 +1,10 @@
 import { Injectable, inject } from '@angular/core';
 import { RespuestaApi } from '../models/api.model';
-import { COMMENTS_PAGE_SIZE, CommentPage, ExperienceComment, NewComment } from '../models/comment.model';
+import { COMMENTS_PAGE_SIZE, CommentInsights, CommentPage, CommentSort, ExperienceComment, NewComment } from '../models/comment.model';
 import { ApiService } from './api.service';
+
+// El agente IA puede tardar en analizar las opiniones la primera vez; el backend corta a los 30 s.
+const INSIGHTS_TIMEOUT_MS = 40_000;
 
 /**
  * Comentarios de una experiencia. Pasa por ApiService, así que el interceptor de auth envía las cookies
@@ -15,9 +18,14 @@ export class CommentService {
     return `shop/experiences/${encodeURIComponent(slug)}/comments`;
   }
 
-  async list(slug: string, page = 1, signal?: AbortSignal): Promise<CommentPage> {
-    const params = { page, limit: COMMENTS_PAGE_SIZE };
+  async list(slug: string, page = 1, sort: CommentSort = 'recent', signal?: AbortSignal): Promise<CommentPage> {
+    const params = { page, limit: COMMENTS_PAGE_SIZE, sort };
     return (await this.api.get<RespuestaApi<CommentPage>>(this.path(slug), { params, signal })).data;
+  }
+
+  /** Análisis de las opiniones hecho por el agente IA (público). */
+  async insights(slug: string, signal?: AbortSignal): Promise<CommentInsights> {
+    return (await this.api.get<RespuestaApi<CommentInsights>>(`${this.path(slug)}/insights`, { signal, timeoutMs: INSIGHTS_TIMEOUT_MS })).data;
   }
 
   async create(slug: string, comment: NewComment): Promise<ExperienceComment> {
