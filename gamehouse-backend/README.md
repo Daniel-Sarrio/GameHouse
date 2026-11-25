@@ -63,7 +63,7 @@ Para una base vacía, aplica primero `database.sql` con tu cliente PostgreSQL. N
 | Autenticación | `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/refresh`, `POST /api/auth/logout` |
 | Perfiles | `GET /api/profiles/me`, `PATCH /api/profiles/me`, `GET /api/profiles/:id`, `PATCH /api/profiles/:id` |
 | Shop (público) | `GET /api/shop/categories`, `GET /api/shop/hosts`, `GET /api/shop/locations`, `GET /api/shop/experiences`, `GET /api/shop/experiences/:slug`, `GET /api/shop/experiences/:slug/departures` |
-| Comentarios | `GET /api/shop/experiences/:slug/comments` (público), `POST /api/shop/experiences/:slug/comments` y `DELETE /api/shop/experiences/:slug/comments/:id` (requieren sesión) |
+| Comentarios | `GET /api/shop/experiences/:slug/comments` (público), `POST /api/shop/experiences/:slug/comments` y `DELETE /api/shop/experiences/:slug/comments/:id` (requieren sesión), `GET /api/shop/experiences/:slug/comments/insights` (análisis IA, público) |
 | Likes (requieren sesión) | `GET /api/likes`, `POST /api/likes/:slug`, `DELETE /api/likes/:slug` |
 | Usuarios (ADMIN) | `GET /api/users`, `GET /api/users/active`, `GET /api/users/deleted`, `GET /api/users/:id`, `POST /api/users`, `PATCH /api/users/:id`, `PATCH /api/users/:id/active`, `PATCH /api/users/:id/softdelete` |
 
@@ -147,6 +147,15 @@ Las rutas `/api/shop` son públicas y de solo lectura (`route → ctrl → servi
 - `POST` pasa por `authenticate`: sin access token válido responde 401 y el cliente renueva la sesión con `/api/auth/refresh`. Cuerpo estricto `{ "rating": 1-5, "body": "..." }`; el autor sale siempre de la sesión, nunca del cuerpo. Límite de 30 comentarios cada 15 minutos.
 - `DELETE` pasa por `authenticate`: solo el autor o un ADMIN (moderación); otro usuario recibe 403. Un id de otra experiencia devuelve 404.
 - Solo se comenta en experiencias publicadas y visibles en el shop. Los comentarios muestran el nombre (nombre e inicial del apellido) y el avatar del autor, nunca su email ni su id.
+
+### Análisis de opiniones con el agente IA
+
+El agente IA (`gamehouse-agent`) lee los comentarios de una experiencia y devuelve qué autores la recomiendan, la valoración de aspectos de una lista cerrada (organización, ambiente, instalaciones, equipamiento, personal, calidad-precio, diversión, ubicación) y un resumen breve. La media y el reparto por estrellas no los calcula el modelo: salen de las valoraciones.
+
+- `GET /api/shop/experiences/:slug/comments/insights` es público y nunca espera al modelo. Responde `insufficient` con menos de 3 opiniones; `ready` con `recommendPercent`, `recommendCount`, `aspects` (`key`, `label`, `rating` de 1 a 5 en pasos de 0,5, `mentions`) y `summary`; `pending` mientras se genera el primer análisis, y `unavailable` si el agente falla sin análisis previo. Con `refreshing: true` hay un análisis más reciente en camino, y con `stale: true` el análisis no incluye las últimas opiniones.
+- `migrations/010_comment_insights.sql` (`npm run migrate:insights`, incluida en `npm run migrate`) crea `comment_insights`, la caché por experiencia. Su `signature` es la huella de los comentarios visibles: al publicar o borrar uno cambia y el análisis se regenera en segundo plano. Así el modelo no se llama en cada visita. Hay una sola generación a la vez por experiencia y, si el agente falla, no se reintenta durante 5 minutos.
+- El backend llama al agente a través de la gateway (`AGENT_API_URL`, por defecto `http://localhost:4000/api/agent`) con la cabecera `X-Internal-Token` (`AGENT_INTERNAL_TOKEN`, el mismo valor que en el `.env` del agente). Solo envía la valoración y el texto de los 100 comentarios más recientes: nunca autores, ids ni emails. La respuesta del agente se vuelve a validar antes de guardarla.
+- `GET .../comments` acepta `sort=recent|rating_desc|rating_asc`.
 
 ### Likes
 

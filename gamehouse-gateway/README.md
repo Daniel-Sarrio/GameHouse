@@ -14,7 +14,7 @@ La tabla está en `src/config/services.ts`. Gana el primer prefijo que coincide,
 
 | Prefijo | Microservicio | Timeout | Cookies |
 | --- | --- | --- | --- |
-| `/api/agent` | `gamehouse-agent` (`AGENT_URL`) | 25 s | se eliminan (el agente no necesita la sesión) |
+| `/api/agent` | `gamehouse-agent` (`AGENT_URL`) | 100 s (el análisis de opiniones puede esperar al modelo hasta 90 s) | se eliminan (el agente no necesita la sesión) |
 | `/api` | `gamehouse-backend` (`BACKEND_URL`) | 15 s | se reenvían |
 
 - La ruta se reenvía completa (`/api/shop/experiences` llega igual al backend).
