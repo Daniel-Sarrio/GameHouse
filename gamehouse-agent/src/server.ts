@@ -3,6 +3,7 @@ import 'dotenv/config';
 import cors from 'cors';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import chatRoutes from './routes/chat.routes';
+import insightsRoutes from './routes/insights.routes';
 import type { ErrorResponseBody } from './types/chat.types';
 
 const PORT = Number(process.env.PORT) || 3001;
@@ -13,6 +14,8 @@ app.disable('x-powered-by');
 
 // CORS solo para el origen del frontend; nunca '*'.
 app.use(cors({ origin: FRONTEND_URL, methods: ['POST'], allowedHeaders: ['Content-Type'] }));
+// Análisis de opiniones (solo backend, con token interno): lee su propio cuerpo, de hasta 80 kB.
+app.use('/api/agent/insights', insightsRoutes);
 app.use(express.json({ limit: '10kb' }));
 
 app.use('/api/agent', chatRoutes);

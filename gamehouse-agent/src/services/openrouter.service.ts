@@ -12,6 +12,13 @@ interface OpenRouterResponse {
   choices?: { message?: { content?: unknown } }[];
 }
 
+export interface CompletionOptions {
+  maxTokens?: number;
+  temperature?: number;
+  /** Pide al modelo un objeto JSON (response_format). El llamante debe validar igualmente la respuesta. */
+  json?: boolean;
+}
+
 /** Lee la configuración en cada llamada para no fijar el modelo ni la key en el código. */
 function readConfig(): { apiKey: string; model: string } {
   const apiKey = process.env.OPENROUTER_API_KEY?.trim();
@@ -21,7 +28,11 @@ function readConfig(): { apiKey: string; model: string } {
 }
 
 /** Envía el system prompt y el historial a OpenRouter y devuelve el texto de la respuesta. */
-export async function getChatCompletion(systemPrompt: string, messages: ChatMessage[]): Promise<string> {
+export async function getChatCompletion(
+  systemPrompt: string,
+  messages: ChatMessage[],
+  { maxTokens = MAX_REPLY_TOKENS, temperature = 0.3, json = false }: CompletionOptions = {},
+): Promise<string> {
   const { apiKey, model } = readConfig();
   const response = await fetch(OPENROUTER_URL, {
     method: 'POST',
@@ -33,8 +44,9 @@ export async function getChatCompletion(systemPrompt: string, messages: ChatMess
     body: JSON.stringify({
       model,
       messages: [{ role: 'system', content: systemPrompt }, ...messages],
-      max_tokens: MAX_REPLY_TOKENS,
-      temperature: 0.3,
+      max_tokens: maxTokens,
+      temperature,
+      ...(json ? { response_format: { type: 'json_object' } } : {}),
     }),
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
