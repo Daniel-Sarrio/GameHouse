@@ -132,8 +132,8 @@ export async function insights(req: Request, res: Response<InsightsResponseBody 
     const reply = await getChatCompletion(
       buildInsightsPrompt(parsed.value),
       [{ role: 'user', content: 'Analiza los comentarios y devuelve solo el objeto JSON.' }],
-      // Margen de tokens amplio: los modelos de razonamiento también los consumen al pensar.
-      { json: true, maxTokens: 6000, temperature: 0.1, timeoutMs: MODEL_TIMEOUT_MS, reasoningEffort: 'low' },
+      // Sin razonamiento: extraer el JSON no lo necesita y con él la llamada tardaba más de un minuto.
+      { json: true, maxTokens: 3000, temperature: 0.1, timeoutMs: MODEL_TIMEOUT_MS, disableReasoning: true },
     );
     res.json(parseModelInsights(reply, parsed.value.comments));
   } catch (error) {

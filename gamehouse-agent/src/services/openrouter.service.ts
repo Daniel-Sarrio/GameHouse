@@ -20,10 +20,11 @@ export interface CompletionOptions {
   /** Tiempo máximo de espera del modelo; por defecto 20 s (chat). */
   timeoutMs?: number;
   /**
-   * Esfuerzo de razonamiento para modelos que razonan antes de responder (OpenRouter lo ignora en el resto).
-   * Sin él, un modelo de razonamiento puede gastar todos los tokens pensando y devolver la respuesta vacía.
+   * Desactiva el razonamiento en los modelos que razonan antes de responder (OpenRouter lo ignora en el resto).
+   * Para tareas de extracción a JSON no aporta: con él, un modelo de razonamiento tardaba más de un minuto
+   * (miles de tokens pensando, o la respuesta vacía); sin él, unos 8 segundos.
    */
-  reasoningEffort?: 'low' | 'medium' | 'high';
+  disableReasoning?: boolean;
 }
 
 /** Lee la configuración en cada llamada para no fijar el modelo ni la key en el código. */
@@ -38,7 +39,7 @@ function readConfig(): { apiKey: string; model: string } {
 export async function getChatCompletion(
   systemPrompt: string,
   messages: ChatMessage[],
-  { maxTokens = MAX_REPLY_TOKENS, temperature = 0.3, json = false, timeoutMs = REQUEST_TIMEOUT_MS, reasoningEffort }: CompletionOptions = {},
+  { maxTokens = MAX_REPLY_TOKENS, temperature = 0.3, json = false, timeoutMs = REQUEST_TIMEOUT_MS, disableReasoning = false }: CompletionOptions = {},
 ): Promise<string> {
   const { apiKey, model } = readConfig();
   const response = await fetch(OPENROUTER_URL, {
@@ -54,7 +55,7 @@ export async function getChatCompletion(
       max_tokens: maxTokens,
       temperature,
       ...(json ? { response_format: { type: 'json_object' } } : {}),
-      ...(reasoningEffort ? { reasoning: { effort: reasoningEffort, exclude: true } } : {}),
+      ...(disableReasoning ? { reasoning: { enabled: false } } : {}),
     }),
     signal: AbortSignal.timeout(timeoutMs),
   });
