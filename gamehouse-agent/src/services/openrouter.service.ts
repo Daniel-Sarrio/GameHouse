@@ -17,6 +17,13 @@ export interface CompletionOptions {
   temperature?: number;
   /** Pide al modelo un objeto JSON (response_format). El llamante debe validar igualmente la respuesta. */
   json?: boolean;
+  /** Tiempo máximo de espera del modelo; por defecto 20 s (chat). */
+  timeoutMs?: number;
+  /**
+   * Esfuerzo de razonamiento para modelos que razonan antes de responder (OpenRouter lo ignora en el resto).
+   * Sin él, un modelo de razonamiento puede gastar todos los tokens pensando y devolver la respuesta vacía.
+   */
+  reasoningEffort?: 'low' | 'medium' | 'high';
 }
 
 /** Lee la configuración en cada llamada para no fijar el modelo ni la key en el código. */
@@ -31,7 +38,7 @@ function readConfig(): { apiKey: string; model: string } {
 export async function getChatCompletion(
   systemPrompt: string,
   messages: ChatMessage[],
-  { maxTokens = MAX_REPLY_TOKENS, temperature = 0.3, json = false }: CompletionOptions = {},
+  { maxTokens = MAX_REPLY_TOKENS, temperature = 0.3, json = false, timeoutMs = REQUEST_TIMEOUT_MS, reasoningEffort }: CompletionOptions = {},
 ): Promise<string> {
   const { apiKey, model } = readConfig();
   const response = await fetch(OPENROUTER_URL, {
@@ -47,8 +54,9 @@ export async function getChatCompletion(
       max_tokens: maxTokens,
       temperature,
       ...(json ? { response_format: { type: 'json_object' } } : {}),
+      ...(reasoningEffort ? { reasoning: { effort: reasoningEffort, exclude: true } } : {}),
     }),
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    signal: AbortSignal.timeout(timeoutMs),
   });
 
   // Solo se registra el código de estado: el cuerpo podría repetir datos de la petición.

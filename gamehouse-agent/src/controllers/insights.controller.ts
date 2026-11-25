@@ -16,6 +16,8 @@ const MAX_COMMENTS = 100;
 const MAX_COMMENT_LENGTH = 500;
 const MAX_ASPECTS = 6;
 const MAX_SUMMARY_LENGTH = 280;
+// El análisis se genera en segundo plano y se guarda en caché: puede esperar más que el chat.
+const MODEL_TIMEOUT_MS = 90_000;
 const GENERIC_ERROR = 'No se pudo analizar las opiniones ahora mismo.';
 
 type ParseResult<T> = { ok: true; value: T } | { ok: false; error: string };
@@ -105,7 +107,8 @@ export async function insights(req: Request, res: Response<InsightsResponseBody 
     const reply = await getChatCompletion(
       buildInsightsPrompt(parsed.value),
       [{ role: 'user', content: 'Analiza los comentarios y devuelve solo el objeto JSON.' }],
-      { json: true, maxTokens: 1500, temperature: 0.1 },
+      // Margen de tokens amplio: los modelos de razonamiento también los consumen al pensar.
+      { json: true, maxTokens: 6000, temperature: 0.1, timeoutMs: MODEL_TIMEOUT_MS, reasoningEffort: 'low' },
     );
     res.json(parseModelInsights(reply, parsed.value.comments));
   } catch (error) {
