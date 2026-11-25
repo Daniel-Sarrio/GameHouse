@@ -10,12 +10,16 @@ import {
   type InsightsRequestBody,
   type InsightsResponseBody,
   type ReviewComment,
+  type Sentiment,
 } from '../types/insights.types';
 
 const MAX_COMMENTS = 100;
 const MAX_COMMENT_LENGTH = 500;
 const MAX_ASPECTS = 6;
 const MAX_SUMMARY_LENGTH = 280;
+const MAX_POINTS = 5;
+const MAX_POINT_LENGTH = 100;
+const SENTIMENTS: Sentiment[] = ['positive', 'neutral', 'negative'];
 // El análisis se genera en segundo plano y se guarda en caché: puede esperar más que el chat.
 const MODEL_TIMEOUT_MS = 90_000;
 const GENERIC_ERROR = 'No se pudo analizar las opiniones ahora mismo.';
@@ -56,6 +60,14 @@ function extractJson(reply: string): unknown {
   return JSON.parse(reply.slice(start, end + 1));
 }
 
+/** Texto plano: quita marcas de Markdown y espacios repetidos. */
+const plainText = (value: unknown, max: number): string =>
+  toText(typeof value === 'string' ? value : '', 2000).replace(/[*#_`>]/g, '').replace(/\s+/g, ' ').trim().slice(0, max);
+
+/** Lista de frases cortas, sin vacías ni repetidas. */
+const points = (value: unknown): string[] => [...new Set((Array.isArray(value) ? value : [])
+  .map((item) => plainText(item, MAX_POINT_LENGTH)).filter(Boolean))].slice(0, MAX_POINTS);
+
 const roundToHalf = (value: number): number => Math.min(5, Math.max(1, Math.round(value * 2) / 2));
 
 /**
@@ -72,6 +84,12 @@ export function parseModelInsights(reply: string, comments: ReviewComment[]): In
     ? (raw.recommends as boolean[])
     : comments.map((comment) => comment.rating >= 4);
 
+  // Igual con el sentimiento: si no hay uno válido por comentario, se deduce de la valoración.
+  const sentiments: Sentiment[] = Array.isArray(raw.sentiments) && raw.sentiments.length === comments.length
+    && raw.sentiments.every((value) => SENTIMENTS.includes(value as Sentiment))
+    ? (raw.sentiments as Sentiment[])
+    : comments.map((comment) => (comment.rating >= 4 ? 'positive' : comment.rating === 3 ? 'neutral' : 'negative'));
+
   const seen = new Set<AspectKey>();
   const aspects: AspectRating[] = [];
   for (const item of Array.isArray(raw.aspects) ? raw.aspects : []) {
@@ -86,13 +104,20 @@ export function parseModelInsights(reply: string, comments: ReviewComment[]): In
   aspects.sort((a, b) => b.mentions - a.mentions);
 
   // Texto plano: se quitan marcas de Markdown que el modelo pudiera añadir.
-  const summary = toText(typeof raw.summary === 'string' ? raw.summary : '', 2000).replace(/[*#_`>]/g, '').replace(/\s+/g, ' ').trim().slice(0, MAX_SUMMARY_LENGTH);
+  const summary = plainText(raw.summary, MAX_SUMMARY_LENGTH);
 
   return {
     analyzedCount: comments.length,
     recommendCount: recommends.filter(Boolean).length,
     aspects: aspects.slice(0, MAX_ASPECTS),
     summary,
+    positives: points(raw.positives),
+    negatives: points(raw.negatives),
+    sentiment: {
+      positive: sentiments.filter((value) => value === 'positive').length,
+      neutral: sentiments.filter((value) => value === 'neutral').length,
+      negative: sentiments.filter((value) => value === 'negative').length,
+    },
   };
 }
 

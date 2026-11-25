@@ -24,6 +24,15 @@ export interface AspectRating {
   mentions: number;
 }
 
+export type Sentiment = 'positive' | 'neutral' | 'negative';
+
+/** Cuántos comentarios son positivos, neutros o negativos (la balanza del panel de administración). */
+export interface SentimentCount {
+  positive: number;
+  neutral: number;
+  negative: number;
+}
+
 export interface InsightsResponseBody {
   analyzedCount: number;
   /** Comentarios cuyo autor recomienda la experiencia. */
@@ -31,4 +40,8 @@ export interface InsightsResponseBody {
   aspects: AspectRating[];
   /** Resumen breve en texto plano de lo que opinan los usuarios. */
   summary: string;
+  /** Puntos fuertes y débiles que repiten los comentarios (frases cortas). */
+  positives: string[];
+  negatives: string[];
+  sentiment: SentimentCount;
 }
