@@ -1,7 +1,8 @@
 // Cliente del agente IA (gamehouse-agent). El backend solo ve la gateway (puerto 4000), que reenvía /api/agent.
 const AppError = require('./app-error');
 
-const TIMEOUT_MS = 30 * 1000;
+// El agente espera al modelo hasta 90 s; la petición se hace siempre en segundo plano.
+const TIMEOUT_MS = 100 * 1000;
 
 const config = () => ({
   baseUrl: (process.env.AGENT_API_URL || 'http://localhost:4000/api/agent').replace(/\/+$/, ''),

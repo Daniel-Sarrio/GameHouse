@@ -57,8 +57,11 @@ async function register(email, firstName) {
 }
 const comment = (user, rating, body) => request('POST', commentsUrl, { token: user.token, body: { rating, body } });
 const insights = async () => (await request('GET', insightsUrl)).data.data;
-// Espera a que termine la regeneración en segundo plano que lanza publicar o borrar un comentario.
-const settle = () => new Promise((resolve) => setTimeout(resolve, 150));
+// Espera a que termine la generación en segundo plano (la lanzan publicar, borrar o consultar el análisis).
+const settle = async () => {
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  await insightsService.settle();
+};
 
 before(async () => {
   await control.query(`CREATE SCHEMA ${schema}`);
@@ -124,7 +127,7 @@ test('con menos de 3 opiniones no se llama al agente', async () => {
   assert.equal((await request('GET', '/api/shop/experiences/no-existe/comments/insights')).status, 404);
 });
 
-test('con 3 opiniones el agente analiza los comentarios y el resultado se valida', async () => {
+test('con 3 opiniones el agente analiza los comentarios en segundo plano y el resultado se valida', async () => {
   assert.equal((await comment(alice, 4, 'Buen ambiente, el personal muy atento.')).status, 201);
   await settle();
   // Publicar el comentario ya ha generado el análisis en segundo plano.
@@ -142,6 +145,7 @@ test('con 3 opiniones el agente analiza los comentarios y el resultado se valida
   assert.equal(fakeAgent.calls.length, 1, 'la segunda lectura usa la caché');
   assert.equal(result.status, 'ready');
   assert.equal(result.stale, false);
+  assert.equal(result.refreshing, false);
   assert.equal(result.analyzedCount, 3);
   assert.equal(result.recommendCount, 2);
   assert.equal(result.recommendPercent, 67);
@@ -165,32 +169,55 @@ test('un comentario nuevo o borrado invalida la caché y se vuelve a analizar un
   assert.equal((await insights()).analyzedCount, 3);
 });
 
-test('varias visitas simultáneas con la caché desactualizada generan un único análisis', async () => {
+test('la consulta nunca espera al modelo: devuelve el último análisis mientras se genera uno nuevo', async () => {
   await pool.query("UPDATE comment_insights SET signature = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'");
-  fakeAgent.delayMs = 200;
+  fakeAgent.delayMs = 400;
+  const started = Date.now();
   const results = await Promise.all([1, 2, 3, 4].map(() => insights()));
-  assert.ok(results.every((result) => result.status === 'ready' && !result.stale));
+  assert.ok(Date.now() - started < 400, 'las visitas no esperan al agente');
+  assert.ok(results.every((result) => result.status === 'ready' && result.stale && result.refreshing));
+  await settle();
+  // Varias visitas simultáneas generan un único análisis.
+  assert.equal(fakeAgent.calls.length, 1);
+  const fresh = await insights();
+  assert.equal(fresh.stale, false);
+  assert.equal(fresh.refreshing, false);
+});
+
+test('sin análisis previo responde pending hasta que el agente termina', async () => {
+  await pool.query('DELETE FROM comment_insights');
+  fakeAgent.delayMs = 200;
+  assert.deepEqual(await insights(), { status: 'pending' });
+  assert.deepEqual(await insights(), { status: 'pending' });
+  await settle();
+  assert.equal((await insights()).status, 'ready');
   assert.equal(fakeAgent.calls.length, 1);
 });
 
 test('si el agente falla se muestra el último análisis (stale) y no se reintenta en cada visita', async () => {
   await pool.query("UPDATE comment_insights SET signature = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'");
   fakeAgent.status = 502;
+  assert.equal((await insights()).refreshing, true);
+  await settle();
   const stale = await insights();
   assert.equal(stale.status, 'ready');
   assert.equal(stale.stale, true);
+  assert.equal(stale.refreshing, false);
   assert.equal(stale.analyzedCount, 3);
-  assert.equal((await insights()).stale, true);
   assert.equal(fakeAgent.calls.length, 1, 'tras un fallo hay una pausa antes de reintentar');
   // Sin análisis previo, la sección queda como no disponible y la página sigue funcionando.
   await pool.query('DELETE FROM comment_insights');
   insightsService.resetFailures();
+  assert.deepEqual(await insights(), { status: 'pending' });
+  await settle();
   assert.deepEqual(await insights(), { status: 'unavailable' });
 });
 
 test('una respuesta del agente con un recuento imposible no se guarda tal cual', async () => {
   await pool.query('DELETE FROM comment_insights');
   fakeAgent.reply = { recommendCount: 50, aspects: 'nada', summary: { texto: 'no' } };
+  await insights();
+  await settle();
   const result = await insights();
   // 50 de 3 es imposible: se usa el recuento por estrellas (5 y 4 recomiendan, 2 no).
   assert.equal(result.recommendCount, 2);
@@ -204,6 +231,8 @@ test('sin token interno configurado no se llama al agente', async () => {
   const token = process.env.AGENT_INTERNAL_TOKEN;
   process.env.AGENT_INTERNAL_TOKEN = '';
   try {
+    await insights();
+    await settle();
     assert.deepEqual(await insights(), { status: 'unavailable' });
     assert.equal(fakeAgent.calls.length, 0);
   } finally { process.env.AGENT_INTERNAL_TOKEN = token; }

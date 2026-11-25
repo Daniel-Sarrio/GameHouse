@@ -54,17 +54,28 @@ const generate = async (experience, signature) => {
   return repo.upsert(experience.id, { signature, ...sanitize(result, comments) });
 };
 
+/** Lanza la generación (una sola por experiencia y conjunto de comentarios) y registra sus fallos. */
 const generateOnce = (experience, signature) => {
   const key = `${experience.id}:${signature}`;
   if (!inFlight.has(key)) {
-    inFlight.set(key, generate(experience, signature).finally(() => inFlight.delete(key)));
+    const task = generate(experience, signature)
+      .then((row) => { failedAt.delete(experience.id); return row; })
+      .catch((error) => {
+        failedAt.set(experience.id, Date.now());
+        console.error('Comment insights failed:', { status: error.statusCode, experienceId: experience.id });
+        throw error;
+      })
+      .finally(() => inFlight.delete(key));
+    inFlight.set(key, task);
   }
   return inFlight.get(key);
 };
 
-const toResponse = (row, { stale }) => ({
+const toResponse = (row, { stale, refreshing = false }) => ({
   status: 'ready',
   stale,
+  // true mientras el agente prepara un análisis más reciente: el cliente puede volver a consultar.
+  refreshing,
   analyzedCount: row.analyzed_count,
   recommendCount: row.recommend_count,
   recommendPercent: Math.round((row.recommend_count / row.analyzed_count) * 100),
@@ -74,9 +85,10 @@ const toResponse = (row, { stale }) => ({
 });
 
 /**
- * Análisis de las opiniones de una experiencia publicada. Usa la caché si los comentarios no han cambiado;
- * si han cambiado, pide un análisis nuevo al agente. Si el agente falla, devuelve el último análisis
- * (stale) o `unavailable`, sin romper la página.
+ * Análisis de las opiniones de una experiencia publicada. Nunca espera al modelo (puede tardar más que
+ * cualquier timeout HTTP): si los comentarios han cambiado, lanza la generación en segundo plano y responde
+ * al momento con el último análisis (`refreshing`) o con `pending`; el cliente vuelve a consultar.
+ * Si el agente ha fallado hace poco, no se reintenta y se devuelve el último análisis (stale) o `unavailable`.
  */
 const getInsights = async (slug) => {
   const experience = await shopRepo.findExperienceBySlug(slug);
@@ -89,15 +101,8 @@ const getInsights = async (slug) => {
   if (Date.now() - (failedAt.get(experience.id) ?? 0) < RETRY_AFTER_MS) {
     return cached ? toResponse(cached, { stale: true }) : { status: 'unavailable' };
   }
-  try {
-    const row = await generateOnce(experience, signature);
-    failedAt.delete(experience.id);
-    return toResponse(row, { stale: false });
-  } catch (error) {
-    failedAt.set(experience.id, Date.now());
-    console.error('Comment insights failed:', { status: error.statusCode, experienceId: experience.id });
-    return cached ? toResponse(cached, { stale: true }) : { status: 'unavailable' };
-  }
+  generateOnce(experience, signature).catch(() => undefined);
+  return cached ? toResponse(cached, { stale: true, refreshing: true }) : { status: 'pending' };
 };
 
 /** Tras publicar o borrar un comentario, regenera el análisis en segundo plano para la próxima visita. */
@@ -105,7 +110,10 @@ const refreshInBackground = (slug) => {
   getInsights(slug).catch(() => undefined);
 };
 
+/** Solo para pruebas: espera a que terminen las generaciones en curso. */
+const settle = () => Promise.allSettled([...inFlight.values()]);
+
 /** Solo para pruebas: olvida los fallos recientes del agente. */
 const resetFailures = () => failedAt.clear();
 
-module.exports = { getInsights, resetFailures, refreshInBackground, sanitize, MIN_COMMENTS, ASPECT_LABELS };
+module.exports = { getInsights, resetFailures, settle, refreshInBackground, sanitize, MIN_COMMENTS, ASPECT_LABELS };
